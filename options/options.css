@@ -209,6 +209,8 @@ footer {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   width: 500px;
   max-width: 90%;
+  max-height: 90vh; /* 画面の90%の高さを上限に */
+  overflow-y: auto; /* 縦方向のスクロールを許可 */
 }
 
 .modal-header {
@@ -241,75 +243,130 @@ footer {
   margin-top: 16px;
 }
 
-/* トグルスイッチのスタイル */
+/* 電灯スイッチ風のトグルスタイル - 位置修正完全版 */
 .switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 70px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 15px;
+  background: #e1e4e8;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  
+  /* パディングを削除して位置ズレを防止 */
+  padding: 0;
+  
+  /* 子要素を中央に配置 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.switch input { 
+/* チェックボックスを非表示 */
+.switch input {
   opacity: 0;
   width: 0;
   height: 0;
+  margin: 0;
+  position: absolute;
 }
 
+/* 電灯スイッチのスライダー */
 .slider {
   position: absolute;
-  cursor: pointer;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: 15px;
+  overflow: hidden; /* 子要素をクリップ */
 }
 
-.slider:before {
-  position: absolute;
+/* オンとオフのラベル部分の共通スタイル */
+.slider:before, .slider:after {
   content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: .4s;
+  position: absolute;
+  width: 50%;
+  height: 100%;
+  top: 0;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  
+  /* テキスト位置の修正 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
-input:checked + .slider {
+/* オフ状態のボタン部分 */
+.slider:before {
+  content: "無効";
+  left: 0;
+  background-color: #f6f8fa;
+  color: #586069;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* オン状態のボタン部分 */
+.slider:after {
+  content: "有効";
+  right: 0;
+  background-color: #f6f8fa;
+  color: #586069;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* チェックされていない状態では無効ボタンが沈む */
+input:not(:checked) + .slider:before {
+  transform: translateY(2px);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
+  background-color: #e1e4e8;
+  color: #24292e;
+}
+
+/* チェックされた状態では有効ボタンが沈む */
+input:checked + .slider:after {
+  transform: translateY(2px);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
   background-color: #2ea44f;
+  color: white;
 }
 
-input:focus + .slider {
-  box-shadow: 0 0 1px #2ea44f;
-}
-
-input:checked + .slider:before {
-  transform: translateX(20px);
-}
-
+/* 丸いスイッチのスタイル */
 .slider.round {
-  border-radius: 24px;
+  border-radius: 15px;
 }
 
-.slider.round:before {
-  border-radius: 50%;
+.slider.round:before, .slider.round:after {
+  border-radius: 13px;
 }
 
 /* 翻訳エントリー編集モーダル用スタイル */
-.entry-list-container {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 0 0 16px 0;
-  border-bottom: 1px solid #e1e4e8;
-  margin-bottom: 16px;
-}
-
 .entry-list-actions {
   display: flex;
   justify-content: space-between;
   margin-bottom: 12px;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  padding: 8px 0;
+  z-index: 10;
+}
+
+.entry-list-container {
+  max-height: 300px; /* リストの最大高さを制限 */
+  overflow-y: auto; /* リスト内でのスクロールを許可 */
+  margin-bottom: 20px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 8px;
 }
 
 .entry-list {
@@ -370,10 +427,12 @@ input:checked + .slider:before {
 }
 
 .entry-edit-form {
+  margin-top: 20px;
   padding: 16px;
   border: 1px solid #e1e4e8;
   border-radius: 6px;
   margin-bottom: 16px;
+  background-color: #f6f8fa; /* 背景色を追加して視認性向上 */
 }
 
 .entry-edit-form h3 {
@@ -406,7 +465,13 @@ input:checked + .slider:before {
 }
 
 .entry-modal-buttons {
+  position: sticky;
+  bottom: 0;
+  background-color: white;
+  padding: 12px 0;
+  border-top: 1px solid #e1e4e8;
   margin-top: 16px;
+  z-index: 10;
 }
 
 /* 正規表現テストツール */
@@ -455,26 +520,4 @@ input:checked + .slider:before {
 
 .successful-match {
   color: #28a745;
-}
-
-/* モーダルの内容をスクロール可能にする */
-.modal-content {
-  max-height: 90vh; /* 画面の90%の高さを上限に */
-  overflow-y: auto; /* 縦方向のスクロールを許可 */
-}
-
-/* エントリーリストコンテナのサイズを調整 */
-.entry-list-container {
-  max-height: 300px; /* リストの最大高さを制限 */
-  overflow-y: auto; /* リスト内だけでもスクロール可能に */
-}
-
-/* エントリー追加フォームのスタイル調整 */
-.entry-edit-form {
-  margin-top: 20px;
-  padding: 16px;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  background-color: #f6f8fa; /* 背景色を追加して視認性向上 */
 }
