@@ -105,6 +105,10 @@ translations:
   - original: "Following"
     translated: "フォロー中"
     context: "プロフィール"
+
+  - original: "Achievements"
+    translated: "実績"
+    context: "プロフィール"
     
   # ボタン・アクション
   - original: "New"
@@ -141,6 +145,10 @@ translations:
     
   - original: "Watch"
     translated: "ウォッチ"
+    context: "ボタン"
+
+  - original: "Edit profile"
+    translated: "プロフィールを編集"
     context: "ボタン"
 
   # 特殊なテキスト（スペース処理の問題に対応）
