@@ -2,7 +2,7 @@
 site: "github.com"
 language: "日本語"
 description: "GitHub UIの日本語翻訳"
-version: "0.2.0"
+version: "0.3.0"
 author: "223n"
 last_updated: "2025-03-09"
 
@@ -154,3 +154,42 @@ translations:
   - original: " Projects"  # 先頭にスペースがある場合
     translated: "プロジェクト" 
     context: "特殊要素"
+    
+  # 正規表現パターンによる翻訳（新機能）
+  - original: "Issue #(\\d+)"
+    translated: "課題 #$1"
+    context: "課題表示"
+    regex: true
+    
+  - original: "(\\d+) commits?"
+    translated: "$1 コミット"
+    context: "コミット数"
+    regex: true
+    
+  - original: "(\\d+) contributions? in the last year"
+    translated: "昨年の貢献数: $1"
+    context: "プロフィールページ"
+    regex: true
+    
+  - original: "([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)#(\\d+)"
+    translated: "$1/$2 課題#$3"
+    context: "課題リファレンス"
+    regex: true
+    
+  - original: "Created (\\d+) days? ago"
+    translated: "$1 日前に作成"
+    context: "日時表示"
+    regex: true
+    
+  - original: "Last updated (\\w+ \\d+, \\d+)"
+    translated: "最終更新: $1"
+    context: "日時表示"
+    regex: true
+    
+  - original: "Copy path"
+    translated: "パスをコピー"
+    context: "ファイルメニュー"
+    
+  - original: "Copy permalink"
+    translated: "永続リンクをコピー"
+    context: "ファイルメニュー"
