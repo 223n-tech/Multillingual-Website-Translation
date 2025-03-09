@@ -1,7 +1,7 @@
 site: github.com
 language: 日本語
 description: GitHub UIの日本語翻訳
-version: 0.4.0
+version: 0.5.0
 author: 223n
 last_updated: '2025-03-09'
 translations:
@@ -167,3 +167,9 @@ translations:
   - original: Lists
     translated: リスト
     context: 特殊要素
+  - original: Starred
+    translated: お気に入り追加済み
+    context: ボタン
+  - original: Loading
+    translated: 読み込み中
+    context: ボタン
