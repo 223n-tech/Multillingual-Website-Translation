@@ -459,4 +459,4 @@ yarn-error.log*
 # キャッシュ
 .cache/
 
-handover-document.md
+handover-document.*
