@@ -173,3 +173,9 @@ translations:
   - original: Loading
     translated: 読み込み中
     context: ボタン
+  - original: Seeing something unexpected?
+    translated: 予期しない出来事が発生しましたか？
+    context: ラベル
+  - original: Take a look at the
+    translated: こちらをご覧ください
+    context: ラベル
