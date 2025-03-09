@@ -1,0 +1,84 @@
+# GitHub翻訳設定ファイル
+site: "github.com"
+language: "日本語"
+description: "GitHub UIの日本語翻訳"
+version: "0.1.0"
+author: "223n"
+last_updated: "2025-03-09"
+
+# 翻訳エントリー
+translations:
+  # ナビゲーション
+  - original: "Pull requests"
+    translated: "プルリクエスト"
+    context: "メインナビゲーション"
+    
+  - original: "Issues"
+    translated: "課題"
+    context: "メインナビゲーション"
+    
+  - original: "Marketplace"
+    translated: "マーケットプレイス"
+    context: "メインナビゲーション"
+    
+  - original: "Explore"
+    translated: "探索"
+    context: "メインナビゲーション"
+    
+  # リポジトリページ
+  - original: "Code"
+    translated: "コード"
+    context: "リポジトリタブ"
+    
+  - original: "Pull requests"
+    translated: "プルリクエスト"
+    context: "リポジトリタブ"
+    
+  - original: "Actions"
+    translated: "アクション"
+    context: "リポジトリタブ"
+    
+  - original: "Projects"
+    translated: "プロジェクト"
+    context: "リポジトリタブ"
+    
+  - original: "Wiki"
+    translated: "ウィキ"
+    context: "リポジトリタブ"
+    
+  - original: "Security"
+    translated: "セキュリティ"
+    context: "リポジトリタブ"
+    
+  - original: "Insights"
+    translated: "インサイト"
+    context: "リポジトリタブ"
+    
+  - original: "Settings"
+    translated: "設定"
+    context: "リポジトリタブ"
+    
+  # ボタン
+  - original: "New"
+    translated: "新規"
+    context: "ボタン"
+    
+  - original: "Create"
+    translated: "作成"
+    context: "ボタン"
+    
+  - original: "Delete"
+    translated: "削除"
+    context: "ボタン"
+    
+  - original: "Edit"
+    translated: "編集"
+    context: "ボタン"
+    
+  - original: "Save"
+    translated: "保存"
+    context: "ボタン"
+    
+  - original: "Cancel"
+    translated: "キャンセル"
+    context: "ボタン"
