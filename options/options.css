@@ -456,3 +456,25 @@ input:checked + .slider:before {
 .successful-match {
   color: #28a745;
 }
+
+/* モーダルの内容をスクロール可能にする */
+.modal-content {
+  max-height: 90vh; /* 画面の90%の高さを上限に */
+  overflow-y: auto; /* 縦方向のスクロールを許可 */
+}
+
+/* エントリーリストコンテナのサイズを調整 */
+.entry-list-container {
+  max-height: 300px; /* リストの最大高さを制限 */
+  overflow-y: auto; /* リスト内だけでもスクロール可能に */
+}
+
+/* エントリー追加フォームのスタイル調整 */
+.entry-edit-form {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  background-color: #f6f8fa; /* 背景色を追加して視認性向上 */
+}
