@@ -1,4 +1,4 @@
-// コンテンツスクリプト (正規表現対応版)
+// コンテンツスクリプト (正規表現対応版) - コンテキスト無視でページ内すべての要素を翻訳
 // ページ内のテキストを翻訳する
 
 // デバッグフラグ
@@ -39,6 +39,12 @@ function initialize() {
   // 初回実行時にも翻訳データを読み込む
   debugLog('初回翻訳データ読み込み開始');
   loadTranslations();
+  
+  // 遅延再翻訳（動的コンテンツ対応）
+  setTimeout(() => {
+    debugLog('遅延翻訳実行');
+    loadTranslations();
+  }, 2000); // 2秒後に再度翻訳を実行
 }
 
 // 翻訳データの読み込み
@@ -115,7 +121,7 @@ function startTranslation() {
     
     // GitHub固有の要素を先に処理
     if (currentDomain.includes('github.com')) {
-      translateGitHubSpecificElements(document.body, translationMap);
+      translatedCount += translateGitHubSpecificElements(document.body, translationMap);
       
       // data-content属性を持つ要素を特別に処理
       const dataContentElements = document.querySelectorAll('[data-content]');
@@ -173,7 +179,7 @@ function startTranslation() {
   }
 }
 
-// 翻訳マップの作成（高速検索用）- 正規表現対応
+// 翻訳マップの作成（高速検索用）- コンテキスト無視版
 function createTranslationMap(translationsList) {
   const map = {
     exact: {},     // 通常の完全一致用マップ
@@ -188,8 +194,7 @@ function createTranslationMap(translationsList) {
         const regexPattern = new RegExp(entry.original, 'g');
         map.regex.push({
           pattern: regexPattern,
-          replacement: entry.translated,
-          context: entry.context
+          replacement: entry.translated
         });
         debugLog(`正規表現パターンを追加: ${entry.original}`);
       } catch (error) {
@@ -198,7 +203,7 @@ function createTranslationMap(translationsList) {
     } 
     // 通常のテキスト（完全一致）の場合
     else {
-      // 元のテキストをキーとして使用
+      // 元のテキストをキーとして使用（コンテキストは無視）
       const key = entry.original.trim();
       map.exact[key] = entry.translated;
       
@@ -213,7 +218,7 @@ function createTranslationMap(translationsList) {
   return map;
 }
 
-// テキストノードの翻訳処理（正規表現対応）
+// テキストノードの翻訳処理（正規表現対応）- コンテキスト無視版
 function translateTextNode(node, translationMap) {
   if (!node.textContent.trim()) return false;
   
@@ -221,7 +226,7 @@ function translateTextNode(node, translationMap) {
   let text = originalText;
   let translated = false;
   
-  // 1. 完全一致での翻訳を試みる
+  // 1. 完全一致での翻訳を試みる（コンテキスト無視）
   const trimmedText = text.trim();
   if (translationMap.exact[trimmedText]) {
     // 前後の空白を保持する処理
@@ -229,6 +234,7 @@ function translateTextNode(node, translationMap) {
     const trailingSpace = text.match(/\s*$/)[0];
     text = leadingSpace + translationMap.exact[trimmedText] + trailingSpace;
     translated = true;
+    debugLog(`テキスト翻訳（コンテキスト無視）: "${trimmedText}" -> "${translationMap.exact[trimmedText]}"`);
   } 
   // 2. 正規表現での翻訳を試みる
   else {
@@ -349,7 +355,7 @@ function translateElements(rootNode, translationMap) {
   return translatedCount;
 }
 
-// GitHub固有の要素を翻訳 - 正規表現対応
+// GitHub固有の要素を翻訳 - 正規表現対応、コンテキスト無視、特別処理追加
 function translateGitHubSpecificElements(rootElement, translationMap) {
   let translatedCount = 0;
   
@@ -454,6 +460,28 @@ function translateGitHubSpecificElements(rootElement, translationMap) {
     }
   });
   
+  // プロフィールページの特別処理（Achievements対応）
+  const headingElements = rootElement.querySelectorAll('h2');
+  headingElements.forEach(heading => {
+    const text = heading.textContent.trim();
+    // 見出しテキストを翻訳マップで確認
+    if (translationMap.exact[text]) {
+      debugLog(`見出し要素翻訳: "${text}" -> "${translationMap.exact[text]}"`);
+      heading.textContent = translationMap.exact[text];
+      translatedCount++;
+    }
+  });
+  
+  // Achievements要素の直接指定による特別処理
+  const achievementElements = rootElement.querySelectorAll('h2.h4, h2.f4, .h4.mb-2, .Link--primary');
+  achievementElements.forEach(element => {
+    if (element.textContent.trim() === 'Achievements') {
+      element.textContent = '実績';
+      debugLog('Achievements要素を直接翻訳しました');
+      translatedCount++;
+    }
+  });
+  
   return translatedCount;
 }
 
@@ -536,6 +564,31 @@ function setupMutationObserver(translationMap) {
                 break;
               }
             }
+          }
+        });
+        
+        // Achievements要素の特別処理
+        const achievementElements = [];
+        mutations.forEach(mutation => {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // h2要素を探す
+              if (node.tagName === 'H2') {
+                achievementElements.push(node);
+              }
+              
+              // 子要素からh2を探す
+              const childHeadings = node.querySelectorAll('h2.h4, h2.f4, .h4.mb-2, .Link--primary');
+              childHeadings.forEach(el => achievementElements.push(el));
+            }
+          });
+        });
+        
+        achievementElements.forEach(el => {
+          if (el.textContent.trim() === 'Achievements') {
+            el.textContent = '実績';
+            debugLog('動的Achievements要素を翻訳しました');
+            translatedCount++;
           }
         });
       }
