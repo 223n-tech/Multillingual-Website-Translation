@@ -77,6 +77,11 @@ translations:
     context: "プロジェクトタブ"
 
   # プロフィール要素
+
+  - original: "Overview"
+    translated: "概要"
+    context: "プロフィール"
+
   - original: "Repositories"
     translated: "リポジトリ"
     context: "プロフィール"
