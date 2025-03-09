@@ -440,6 +440,7 @@ $RECYCLE.BIN/
 # ビルドディレクトリ
 /dist/
 /build/
+/build-beta/
 
 # デバッグログ
 npm-debug.log*
