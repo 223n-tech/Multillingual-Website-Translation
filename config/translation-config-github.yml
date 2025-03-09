@@ -108,7 +108,7 @@ translations:
 
   - original: "Achievements"
     translated: "実績"
-    context: "プロフィール"
+    context: "特殊要素"
     
   # ボタン・アクション
   - original: "New"
