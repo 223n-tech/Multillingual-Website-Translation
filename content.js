@@ -1,4 +1,4 @@
-// コンテンツスクリプト (改善版)
+// コンテンツスクリプト (さらに改善版)
 // ページ内のテキストを翻訳する
 
 // デバッグフラグ
@@ -112,8 +112,32 @@ function startTranslation() {
     // 処理済み要素をリセット
     processedElements = new WeakSet();
     
+    // GitHub固有の要素を先に処理
+    if (currentDomain.includes('github.com')) {
+      translateGitHubSpecificElements(document.body, translationMap);
+      
+      // data-content属性を持つ要素を特別に処理
+      const dataContentElements = document.querySelectorAll('[data-content]');
+      debugLog(`data-content属性を持つ要素: ${dataContentElements.length}個検出`);
+      
+      dataContentElements.forEach(el => {
+        const content = el.getAttribute('data-content');
+        if (content && translationMap[content]) {
+          debugLog(`data-content属性翻訳: "${content}" -> "${translationMap[content]}"`);
+          el.setAttribute('data-content', translationMap[content]);
+          
+          // テキストコンテンツも一致する場合は翻訳
+          if (el.textContent.trim() === content) {
+            el.textContent = translationMap[content];
+          }
+          
+          translatedCount++;
+        }
+      });
+    }
+    
     // ページ内の翻訳対象要素を検索して翻訳
-    translatedCount = translateElements(document.body, translationMap);
+    translatedCount += translateElements(document.body, translationMap);
     
     const endTime = performance.now();
     
@@ -204,7 +228,7 @@ function translateElements(rootNode, translationMap) {
   
   // 特定の属性を翻訳（aria-label, alt, placeholderなど）
   if (rootNode.nodeType === Node.ELEMENT_NODE) {
-    const attributesToTranslate = ['aria-label', 'alt', 'placeholder', 'title'];
+    const attributesToTranslate = ['aria-label', 'alt', 'placeholder', 'title', 'data-content'];
     
     attributesToTranslate.forEach(attr => {
       if (rootNode.hasAttribute(attr)) {
@@ -215,15 +239,14 @@ function translateElements(rootNode, translationMap) {
           debugLog('属性置換:', attr, attrText, '->', translated);
           rootNode.setAttribute(attr, translated);
           translatedCount++;
+          
+          // data-content属性の場合はテキストコンテンツも一致するか確認して置換
+          if (attr === 'data-content' && rootNode.textContent.trim() === attrText) {
+            rootNode.textContent = translated;
+          }
         }
       }
     });
-    
-    // GitHub固有の要素を特別処理
-    // ナビゲーションメニューやリポジトリタブなど
-    if (currentDomain.includes('github.com')) {
-      translateGitHubSpecificElements(rootNode, translationMap);
-    }
   }
   
   // 子ノードを再帰的に処理
@@ -237,52 +260,91 @@ function translateElements(rootNode, translationMap) {
 }
 
 // GitHub固有の要素を翻訳
-function translateGitHubSpecificElements(element, translationMap) {
-  // リポジトリヘッダータブ（Code, Issues, Pull requests など）
-  if (element.classList && 
-      (element.classList.contains('UnderlineNav-item') || 
-       element.classList.contains('js-selected-navigation-item'))) {
-    
+function translateGitHubSpecificElements(rootElement, translationMap) {
+  let translatedCount = 0;
+  
+  // UnderlineNav-item (リポジトリタブ)の処理
+  const underlineNavItems = rootElement.querySelectorAll('.UnderlineNav-item, .js-selected-navigation-item');
+  
+  underlineNavItems.forEach(item => {
     // span要素内のテキストを取得
-    const spans = element.querySelectorAll('span');
+    const spans = item.querySelectorAll('span');
     spans.forEach(span => {
       const text = span.textContent.trim();
       const translated = translationMap[text];
       
       if (translated) {
-        debugLog('GitHub特殊要素置換:', text, '->', translated);
+        debugLog('GitHub UnderlineNav 置換:', text, '->', translated);
         span.textContent = translated;
+        translatedCount++;
       }
     });
     
     // SVGの後ろにあるテキストノードを処理
-    for (const child of element.childNodes) {
+    for (const child of item.childNodes) {
       if (child.nodeType === Node.TEXT_NODE) {
         const text = child.textContent.trim();
         if (text && translationMap[text]) {
           child.textContent = child.textContent.replace(text, translationMap[text]);
+          translatedCount++;
         }
       }
     }
-  }
-  
-  // リポジトリナビゲーション（サイドバー）
-  if (element.getAttribute('data-view-component') === 'true' && 
-      element.classList && element.classList.contains('menu-item')) {
     
-    const text = element.textContent.trim();
-    const translated = translationMap[text];
-    
-    if (translated) {
-      // span要素内のテキストだけを置換
-      const spans = element.querySelectorAll('span');
-      spans.forEach(span => {
-        if (span.textContent.trim() === text) {
-          span.textContent = translated;
-        }
-      });
+    // data-content属性を確認
+    if (item.hasAttribute('data-content')) {
+      const content = item.getAttribute('data-content');
+      const translated = translationMap[content];
+      
+      if (translated) {
+        debugLog('GitHub data-content 置換:', content, '->', translated);
+        item.setAttribute('data-content', translated);
+        translatedCount++;
+      }
     }
-  }
+  });
+  
+  // 特別処理: reponav-itemクラス (古いUIのリポジトリタブ)
+  const repoNavItems = rootElement.querySelectorAll('.reponav-item');
+  
+  repoNavItems.forEach(item => {
+    // span要素内のテキストを確認
+    const spans = item.querySelectorAll('span');
+    spans.forEach(span => {
+      const text = span.textContent.trim();
+      const translated = translationMap[text];
+      
+      if (translated) {
+        debugLog('GitHub repoNav 置換:', text, '->', translated);
+        span.textContent = translated;
+        translatedCount++;
+      }
+    });
+  });
+  
+  // リポジトリヘッダーのdata-content属性を持つ要素を特別処理
+  const headerLinks = rootElement.querySelectorAll('.pagehead-tabs-item');
+  
+  headerLinks.forEach(link => {
+    if (link.hasAttribute('data-content')) {
+      const content = link.getAttribute('data-content');
+      const translated = translationMap[content];
+      
+      if (translated) {
+        debugLog('GitHub header data-content 置換:', content, '->', translated);
+        link.setAttribute('data-content', translated);
+        
+        // テキストも置換
+        if (link.textContent.trim() === content) {
+          link.textContent = translated;
+        }
+        
+        translatedCount++;
+      }
+    }
+  });
+  
+  return translatedCount;
 }
 
 // DOMの変更を監視するMutationObserverの設定
@@ -304,6 +366,51 @@ function setupMutationObserver(translationMap) {
     
     try {
       debugLog('DOM変更検出', mutations.length + '個の変更');
+      
+      // GitHubの特殊なdata-content要素を処理
+      if (currentDomain.includes('github.com')) {
+        const dataContentElements = [];
+        
+        // 変更されたdata-content属性を持つ要素を収集
+        mutations.forEach(mutation => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'data-content') {
+            dataContentElements.push(mutation.target);
+          }
+          
+          // 追加されたノード内のdata-content属性を持つ要素を検索
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (node.hasAttribute('data-content')) {
+                dataContentElements.push(node);
+              }
+              
+              const childDataContentElements = node.querySelectorAll('[data-content]');
+              childDataContentElements.forEach(el => dataContentElements.push(el));
+            }
+          });
+        });
+        
+        // 重複を除去
+        const uniqueElements = [...new Set(dataContentElements)];
+        
+        // data-content属性を翻訳
+        uniqueElements.forEach(el => {
+          const content = el.getAttribute('data-content');
+          if (content && translationMap[content]) {
+            debugLog(`動的data-content属性翻訳: "${content}" -> "${translationMap[content]}"`);
+            el.setAttribute('data-content', translationMap[content]);
+            
+            // テキストコンテンツも一致する場合は翻訳
+            if (el.textContent.trim() === content) {
+              el.textContent = translationMap[content];
+            }
+            
+            translatedCount++;
+          }
+        });
+      }
+      
+      // 通常の変更を処理
       mutations.forEach(mutation => {
         // 追加されたノードを処理
         mutation.addedNodes.forEach(node => {
@@ -313,7 +420,8 @@ function setupMutationObserver(translationMap) {
         });
         
         // 属性変更を処理（クラス変更による表示/非表示など）
-        if (mutation.type === 'attributes') {
+        if (mutation.type === 'attributes' && 
+            mutation.attributeName !== 'data-content') { // data-contentは既に処理済み
           translatedCount += translateElements(mutation.target, translationMap);
         }
         
@@ -340,7 +448,7 @@ function setupMutationObserver(translationMap) {
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ['class', 'style', 'aria-label', 'data-view-component']
+    attributeFilter: ['class', 'style', 'aria-label', 'data-content', 'data-view-component']
   });
   
   debugLog('MutationObserver設定完了');
