@@ -90,7 +90,7 @@ translations:
     context: "プロフィール"
     
   - original: "Stars"
-    translated: "スター"
+    translated: "お気に入り"
     context: "プロフィール"
     
   - original: "Followers"
@@ -131,7 +131,7 @@ translations:
     context: "ボタン"
     
   - original: "Star"
-    translated: "スター"
+    translated: "お気に入り"
     context: "ボタン"
     
   - original: "Watch"

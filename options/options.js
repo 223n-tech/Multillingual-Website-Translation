@@ -21,15 +21,49 @@ const domainEnabled = document.getElementById('domain-enabled');
 const cancelBtn = document.getElementById('cancel-btn');
 const closeBtn = document.querySelector('.close');
 
+// 翻訳エントリー管理モーダル要素
+const entryModal = document.getElementById('entry-modal');
+const entryModalClose = document.getElementById('entry-modal-close');
+const entryList = document.getElementById('entry-list');
+const addEntryBtn = document.getElementById('add-entry-btn');
+const saveEntriesBtn = document.getElementById('save-entries-btn');
+const closeEntryModalBtn = document.getElementById('close-entry-modal-btn');
+
+// エントリー編集フォーム要素
+const entryEditForm = document.getElementById('entry-edit-form');
+const entryFormTitle = document.getElementById('entry-form-title');
+const translationEntryForm = document.getElementById('translation-entry-form');
+const entryOriginal = document.getElementById('entry-original');
+const entryTranslated = document.getElementById('entry-translated');
+const entryContext = document.getElementById('entry-context');
+const entryRegex = document.getElementById('entry-regex');
+const entryCancelBtn = document.getElementById('entry-cancel-btn');
+
+// 正規表現テストツール要素
+const testRegexBtn = document.getElementById('test-regex-btn');
+const regexTestTool = document.getElementById('regex-test-tool');
+const regexPattern = document.getElementById('regex-pattern');
+const regexReplacement = document.getElementById('regex-replacement');
+const regexTestInput = document.getElementById('regex-test-input');
+const runRegexTest = document.getElementById('run-regex-test');
+const regexTestCancel = document.getElementById('regex-test-cancel');
+const regexTestResult = document.getElementById('regex-test-result');
+
 // 編集中のドメインのインデックス
 let editingIndex = -1;
+
+// 現在のドメイン設定と翻訳エントリー
+let currentDomainTranslations = [];
+let currentDomainIndex = -1;
+let editingEntryIndex = -1;
+let currentTranslationYaml = null;
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
   // 設定を読み込む
   loadSettings();
   
-  // イベントリスナーの設定
+  // イベントリスナーの設定 - 基本設定
   translationActive.addEventListener('change', toggleTranslation);
   addDomainBtn.addEventListener('click', showAddDomainModal);
   domainForm.addEventListener('submit', saveDomainSettings);
@@ -39,10 +73,26 @@ document.addEventListener('DOMContentLoaded', () => {
   importBtn.addEventListener('click', () => importFile.click());
   importFile.addEventListener('change', importSettings);
   
+  // イベントリスナーの設定 - 翻訳エントリー管理
+  entryModalClose.addEventListener('click', closeEntryModal);
+  closeEntryModalBtn.addEventListener('click', closeEntryModal);
+  addEntryBtn.addEventListener('click', showAddEntryForm);
+  entryCancelBtn.addEventListener('click', hideEntryForm);
+  translationEntryForm.addEventListener('submit', saveEntryForm);
+  saveEntriesBtn.addEventListener('click', saveAllEntries);
+  
+  // 正規表現テストツール
+  testRegexBtn.addEventListener('click', showRegexTestTool);
+  regexTestCancel.addEventListener('click', hideRegexTestTool);
+  runRegexTest.addEventListener('click', performRegexTest);
+  
   // モーダルの外側をクリックしたときに閉じる
   window.addEventListener('click', event => {
     if (event.target === domainModal) {
       closeDomainModal();
+    }
+    if (event.target === entryModal) {
+      closeEntryModal();
     }
   });
 });
@@ -134,6 +184,12 @@ function renderDomainList(domains) {
     const domainControls = document.createElement('div');
     domainControls.className = 'domain-controls';
     
+    // 翻訳管理ボタンを追加
+    const manageEntriesBtn = document.createElement('button');
+    manageEntriesBtn.className = 'btn secondary icon';
+    manageEntriesBtn.textContent = '翻訳管理';
+    manageEntriesBtn.addEventListener('click', () => showEntryManageModal(index));
+    
     const editBtn = document.createElement('button');
     editBtn.className = 'btn secondary icon';
     editBtn.textContent = '編集';
@@ -144,6 +200,7 @@ function renderDomainList(domains) {
     deleteBtn.textContent = '削除';
     deleteBtn.addEventListener('click', () => deleteDomain(index));
     
+    domainControls.appendChild(manageEntriesBtn);
     domainControls.appendChild(editBtn);
     domainControls.appendChild(deleteBtn);
     
@@ -319,4 +376,334 @@ async function importSettings(event) {
     // 同じファイルを再度選択できるようにする
     event.target.value = '';
   }
+}
+
+// --- 翻訳エントリー管理機能 ---
+
+// 翻訳エントリー管理モーダルの表示
+async function showEntryManageModal(domainIndex) {
+  try {
+    const { settings } = await chrome.storage.local.get('settings');
+    const domain = settings.domains[domainIndex];
+    
+    // 翻訳エントリーを取得
+    currentDomainIndex = domainIndex;
+    
+    // リポジトリURLから翻訳ファイルを取得
+    const response = await fetch(domain.repository);
+    
+    if (!response.ok) {
+      throw new Error(`翻訳ファイルの取得に失敗しました: ${response.status} ${response.statusText}`);
+    }
+    
+    const yamlContent = await response.text();
+    // 元のYAMLを保存（後で正確に更新するため）
+    currentTranslationYaml = yamlContent;
+    
+    const translationData = jsyaml.load(yamlContent);
+    
+    if (!translationData || !translationData.translations) {
+      throw new Error('無効な翻訳ファイル形式です。');
+    }
+    
+    currentDomainTranslations = translationData.translations;
+    
+    // モーダルタイトルを設定
+    document.getElementById('entry-modal-title').textContent = `${domain.name} - 翻訳エントリー管理`;
+    
+    // エントリーリストを表示
+    renderEntryList();
+    
+    // 編集フォームを隠す
+    entryEditForm.style.display = 'none';
+    
+    // テストツールを隠す
+    regexTestTool.style.display = 'none';
+    
+    // モーダルを表示
+    entryModal.style.display = 'block';
+  } catch (error) {
+    console.error('翻訳エントリーの読み込みに失敗しました:', error);
+    alert('エラー: 翻訳エントリーの読み込みに失敗しました。' + error.message);
+  }
+}
+
+// 翻訳エントリーリストの表示
+function renderEntryList() {
+  entryList.innerHTML = '';
+  
+  if (currentDomainTranslations.length === 0) {
+    const emptyMessage = document.createElement('div');
+    emptyMessage.className = 'empty-message';
+    emptyMessage.textContent = '翻訳エントリーがありません。「エントリー追加」ボタンから追加してください。';
+    entryList.appendChild(emptyMessage);
+    return;
+  }
+  
+  currentDomainTranslations.forEach((entry, index) => {
+    const entryItem = document.createElement('div');
+    entryItem.className = 'entry-item';
+    
+    const entryText = document.createElement('div');
+    entryText.className = 'entry-text';
+    
+    const entryOriginalText = document.createElement('div');
+    entryOriginalText.className = 'entry-original';
+    entryOriginalText.textContent = entry.original;
+    
+    const entryTranslatedText = document.createElement('div');
+    entryTranslatedText.className = 'entry-translated';
+    entryTranslatedText.textContent = `→ ${entry.translated}`;
+    
+    entryText.appendChild(entryOriginalText);
+    entryText.appendChild(entryTranslatedText);
+    
+    const entryInfo = document.createElement('div');
+    entryInfo.className = 'entry-info';
+    
+    if (entry.context) {
+      const contextBadge = document.createElement('span');
+      contextBadge.className = 'entry-badge';
+      contextBadge.textContent = entry.context;
+      entryInfo.appendChild(contextBadge);
+    }
+    
+    if (entry.regex) {
+      const regexBadge = document.createElement('span');
+      regexBadge.className = 'entry-badge regex';
+      regexBadge.textContent = '正規表現';
+      entryInfo.appendChild(regexBadge);
+    }
+    
+    entryText.appendChild(entryInfo);
+    
+    const entryControls = document.createElement('div');
+    entryControls.className = 'entry-controls';
+    
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn secondary icon';
+    editBtn.textContent = '編集';
+    editBtn.addEventListener('click', () => showEditEntryForm(index));
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn danger icon';
+    deleteBtn.textContent = '削除';
+    deleteBtn.addEventListener('click', () => deleteEntry(index));
+    
+    entryControls.appendChild(editBtn);
+    entryControls.appendChild(deleteBtn);
+    
+    entryItem.appendChild(entryText);
+    entryItem.appendChild(entryControls);
+    
+    entryList.appendChild(entryItem);
+  });
+}
+
+// エントリー追加フォームの表示
+function showAddEntryForm() {
+  // フォームをリセット
+  translationEntryForm.reset();
+  entryFormTitle.textContent = '翻訳エントリーの追加';
+  editingEntryIndex = -1;
+  
+  // 正規表現テストツールを隠す
+  regexTestTool.style.display = 'none';
+  
+  // フォームを表示
+  entryEditForm.style.display = 'block';
+}
+
+// エントリー編集フォームの表示
+function showEditEntryForm(index) {
+  const entry = currentDomainTranslations[index];
+  
+  // フォームに値を設定
+  entryOriginal.value = entry.original;
+  entryTranslated.value = entry.translated;
+  entryContext.value = entry.context || '';
+  entryRegex.checked = !!entry.regex;
+  
+  entryFormTitle.textContent = '翻訳エントリーの編集';
+  editingEntryIndex = index;
+  
+  // 正規表現テストツールを隠す
+  regexTestTool.style.display = 'none';
+  
+  // フォームを表示
+  entryEditForm.style.display = 'block';
+}
+
+// エントリーフォームを隠す
+function hideEntryForm() {
+  entryEditForm.style.display = 'none';
+}
+
+// 正規表現テストツールを表示
+function showRegexTestTool() {
+  // 現在のエントリー編集フォームの値を取得
+  const pattern = entryOriginal.value;
+  const replacement = entryTranslated.value;
+  
+  // テストフォームに設定
+  regexPattern.value = pattern;
+  regexReplacement.value = replacement;
+  regexTestInput.value = '';
+  regexTestResult.innerHTML = '';
+  
+  // 編集フォームを隠す
+  entryEditForm.style.display = 'none';
+  
+  // テストツールを表示
+  regexTestTool.style.display = 'block';
+}
+
+// 正規表現テストツールを隠す
+function hideRegexTestTool() {
+  regexTestTool.style.display = 'none';
+  
+  // 元の編集フォームを表示
+  entryEditForm.style.display = 'block';
+}
+
+// 正規表現テストの実行
+function performRegexTest() {
+  const pattern = regexPattern.value;
+  const replacement = regexReplacement.value;
+  const testInput = regexTestInput.value;
+  
+  if (!pattern || !testInput) {
+    regexTestResult.innerHTML = '<span class="no-match">パターンまたはテスト文字列が入力されていません</span>';
+    return;
+  }
+  
+  try {
+    // 正規表現オブジェクトを作成
+    const regex = new RegExp(pattern, 'g');
+    
+    // マッチするか確認
+    const matches = testInput.match(regex);
+    
+    if (!matches) {
+      regexTestResult.innerHTML = '<span class="no-match">マッチするテキストがありませんでした</span>';
+      return;
+    }
+    
+    // 置換結果
+    const replacedText = testInput.replace(regex, replacement);
+    
+    // 結果の表示
+    let resultHtml = '<span class="successful-match">マッチ成功!</span><br><br>';
+    resultHtml += `<strong>マッチした数:</strong> ${matches.length}<br>`;
+    resultHtml += `<strong>マッチしたテキスト:</strong> ${matches.join(', ')}<br><br>`;
+    resultHtml += `<strong>置換前:</strong> ${testInput}<br>`;
+    resultHtml += `<strong>置換後:</strong> ${replacedText}`;
+    
+    regexTestResult.innerHTML = resultHtml;
+    
+    // パターンと置換テキストを編集フォームに反映
+    entryOriginal.value = pattern;
+    entryTranslated.value = replacement;
+  } catch (error) {
+    regexTestResult.innerHTML = `<span class="no-match">エラー: ${error.message}</span>`;
+  }
+}
+
+// 翻訳エントリーの保存
+function saveEntryForm(event) {
+  event.preventDefault();
+  
+  const entryData = {
+    original: entryOriginal.value,
+    translated: entryTranslated.value,
+    context: entryContext.value || undefined,
+    regex: entryRegex.checked || undefined
+  };
+  
+  // 空値のプロパティを削除
+  Object.keys(entryData).forEach(key => {
+    if (entryData[key] === undefined) {
+      delete entryData[key];
+    }
+  });
+  
+  if (editingEntryIndex >= 0) {
+    // 既存のエントリーを更新
+    currentDomainTranslations[editingEntryIndex] = entryData;
+  } else {
+    // 新しいエントリーを追加
+    currentDomainTranslations.push(entryData);
+  }
+  
+  // リストを更新
+  renderEntryList();
+  
+  // フォームを隠す
+  hideEntryForm();
+}
+
+// 翻訳エントリーの削除
+function deleteEntry(index) {
+  if (!confirm('このエントリーを削除してもよろしいですか？')) {
+    return;
+  }
+  
+  currentDomainTranslations.splice(index, 1);
+  renderEntryList();
+}
+
+// 全ての翻訳エントリーを保存
+async function saveAllEntries() {
+  try {
+    const { settings } = await chrome.storage.local.get('settings');
+    const domain = settings.domains[currentDomainIndex];
+    
+    if (!domain || !domain.repository) {
+      throw new Error('ドメイン設定が不正です。');
+    }
+    
+    // 元のYAMLをロード
+    const originalYaml = jsyaml.load(currentTranslationYaml);
+    
+    // 翻訳エントリーだけを更新
+    originalYaml.translations = currentDomainTranslations;
+    
+    // 更新したYAMLを生成
+    const updatedYaml = jsyaml.dump(originalYaml);
+    
+    // ここで、GitHubリポジトリに保存する処理が必要ですが、
+    // 拡張機能からは直接GitHubリポジトリへの書き込みはできないため、
+    // ローカルにダウンロードしてユーザーに手動で更新してもらう
+    
+    const blob = new Blob([updatedYaml], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const filename = domain.repository.split('/').pop();
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'translation-config.yml';
+    a.click();
+    
+    // クリーンアップ
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+    alert('翻訳ファイルをダウンロードしました。このファイルをGitHubリポジトリに手動でアップロードしてください。');
+    
+    // モーダルを閉じる
+    closeEntryModal();
+  } catch (error) {
+    console.error('翻訳エントリーの保存に失敗しました:', error);
+    alert('エラー: 翻訳エントリーの保存に失敗しました。' + error.message);
+  }
+}
+
+// 翻訳エントリーモーダルを閉じる
+function closeEntryModal() {
+  entryModal.style.display = 'none';
+  // 状態をリセット
+  currentDomainTranslations = [];
+  currentDomainIndex = -1;
+  editingEntryIndex = -1;
 }

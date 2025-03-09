@@ -1,4 +1,4 @@
-// コンテンツスクリプト (さらに改善版)
+// コンテンツスクリプト (正規表現対応版)
 // ページ内のテキストを翻訳する
 
 // デバッグフラグ
@@ -107,7 +107,8 @@ function startTranslation() {
     
     // クリーンな翻訳マップを作成（より効率的な検索のため）
     const translationMap = createTranslationMap(translations.translations);
-    debugLog('翻訳マップ作成完了', Object.keys(translationMap).length + '個のエントリ');
+    debugLog('翻訳マップ作成完了', Object.keys(translationMap.exact).length + '個の完全一致エントリ、' + 
+             translationMap.regex.length + '個の正規表現エントリ');
     
     // 処理済み要素をリセット
     processedElements = new WeakSet();
@@ -122,16 +123,35 @@ function startTranslation() {
       
       dataContentElements.forEach(el => {
         const content = el.getAttribute('data-content');
-        if (content && translationMap[content]) {
-          debugLog(`data-content属性翻訳: "${content}" -> "${translationMap[content]}"`);
-          el.setAttribute('data-content', translationMap[content]);
+        if (content && translationMap.exact[content]) {
+          debugLog(`data-content属性翻訳: "${content}" -> "${translationMap.exact[content]}"`);
+          el.setAttribute('data-content', translationMap.exact[content]);
           
           // テキストコンテンツも一致する場合は翻訳
           if (el.textContent.trim() === content) {
-            el.textContent = translationMap[content];
+            el.textContent = translationMap.exact[content];
           }
           
           translatedCount++;
+        } else if (content) {
+          // 正規表現による翻訳を試みる
+          for (const regexEntry of translationMap.regex) {
+            regexEntry.pattern.lastIndex = 0;
+            if (regexEntry.pattern.test(content)) {
+              regexEntry.pattern.lastIndex = 0;
+              const newContent = content.replace(regexEntry.pattern, regexEntry.replacement);
+              debugLog(`data-content属性 正規表現翻訳: "${content}" -> "${newContent}"`);
+              el.setAttribute('data-content', newContent);
+              
+              // テキストコンテンツも一致する場合は翻訳
+              if (el.textContent.trim() === content) {
+                el.textContent = newContent;
+              }
+              
+              translatedCount++;
+              break;
+            }
+          }
         }
       });
     }
@@ -153,26 +173,90 @@ function startTranslation() {
   }
 }
 
-// 翻訳マップの作成（高速検索用）
+// 翻訳マップの作成（高速検索用）- 正規表現対応
 function createTranslationMap(translationsList) {
-  const map = {};
+  const map = {
+    exact: {},     // 通常の完全一致用マップ
+    regex: []      // 正規表現パターン用配列
+  };
   
   translationsList.forEach(entry => {
-    // 元のテキストをキーとして使用
-    const key = entry.original.trim();
-    map[key] = entry.translated;
-    
-    // スペースの有無による揺らぎに対応
-    const keyNoExtraSpaces = key.replace(/\s+/g, ' ');
-    if (keyNoExtraSpaces !== key) {
-      map[keyNoExtraSpaces] = entry.translated;
+    // 正規表現パターンの場合
+    if (entry.regex) {
+      try {
+        // 正規表現オブジェクトを作成して保存
+        const regexPattern = new RegExp(entry.original, 'g');
+        map.regex.push({
+          pattern: regexPattern,
+          replacement: entry.translated,
+          context: entry.context
+        });
+        debugLog(`正規表現パターンを追加: ${entry.original}`);
+      } catch (error) {
+        console.error(`無効な正規表現: ${entry.original}`, error);
+      }
+    } 
+    // 通常のテキスト（完全一致）の場合
+    else {
+      // 元のテキストをキーとして使用
+      const key = entry.original.trim();
+      map.exact[key] = entry.translated;
+      
+      // スペースの有無による揺らぎに対応
+      const keyNoExtraSpaces = key.replace(/\s+/g, ' ');
+      if (keyNoExtraSpaces !== key) {
+        map.exact[keyNoExtraSpaces] = entry.translated;
+      }
     }
   });
   
   return map;
 }
 
-// 要素の翻訳（改善版）
+// テキストノードの翻訳処理（正規表現対応）
+function translateTextNode(node, translationMap) {
+  if (!node.textContent.trim()) return false;
+  
+  const originalText = node.textContent;
+  let text = originalText;
+  let translated = false;
+  
+  // 1. 完全一致での翻訳を試みる
+  const trimmedText = text.trim();
+  if (translationMap.exact[trimmedText]) {
+    // 前後の空白を保持する処理
+    const leadingSpace = text.match(/^\s*/)[0];
+    const trailingSpace = text.match(/\s*$/)[0];
+    text = leadingSpace + translationMap.exact[trimmedText] + trailingSpace;
+    translated = true;
+  } 
+  // 2. 正規表現での翻訳を試みる
+  else {
+    // すべての正規表現パターンを順番に試す
+    for (const regexEntry of translationMap.regex) {
+      // 正規表現のテスト
+      regexEntry.pattern.lastIndex = 0; // 毎回検索位置をリセット
+      if (regexEntry.pattern.test(text)) {
+        // マッチしたらパターンをリセットして置換を実行
+        regexEntry.pattern.lastIndex = 0;
+        text = text.replace(regexEntry.pattern, regexEntry.replacement);
+        translated = true;
+        debugLog(`正規表現による翻訳: "${originalText}" -> "${text}"`);
+        break; // 最初にマッチしたパターンで翻訳を終了
+      }
+    }
+  }
+  
+  // 翻訳が行われた場合はテキストを更新
+  if (translated && text !== originalText) {
+    node.textContent = text;
+    return true;
+  }
+  
+  return false;
+}
+
+// 要素の翻訳（改善版）- 正規表現対応
 function translateElements(rootNode, translationMap) {
   let translatedCount = 0;
   
@@ -199,30 +283,9 @@ function translateElements(rootNode, translationMap) {
   
   // テキストノードの場合
   if (rootNode.nodeType === Node.TEXT_NODE) {
-    const text = rootNode.textContent.trim();
-    
-    if (text.length > 0) {
-      // 翻訳マップで検索
-      const translated = translationMap[text];
-      
-      if (translated) {
-        // 翻訳が見つかった場合はテキストを置換
-        debugLog('テキスト置換:', text, '->', translated);
-        rootNode.textContent = rootNode.textContent.replace(text, translated);
-        translatedCount++;
-      } else if (text.length > 1) {
-        // スペースの正規化を試みる
-        const normalizedText = text.replace(/\s+/g, ' ');
-        const translatedNormalized = translationMap[normalizedText];
-        
-        if (translatedNormalized) {
-          debugLog('正規化テキスト置換:', normalizedText, '->', translatedNormalized);
-          rootNode.textContent = rootNode.textContent.replace(text, translatedNormalized);
-          translatedCount++;
-        }
-      }
+    if (translateTextNode(rootNode, translationMap)) {
+      translatedCount++;
     }
-    
     return translatedCount;
   }
   
@@ -232,17 +295,44 @@ function translateElements(rootNode, translationMap) {
     
     attributesToTranslate.forEach(attr => {
       if (rootNode.hasAttribute(attr)) {
-        const attrText = rootNode.getAttribute(attr).trim();
-        const translated = translationMap[attrText];
+        const attrText = rootNode.getAttribute(attr);
+        if (!attrText.trim()) return;
         
-        if (translated) {
-          debugLog('属性置換:', attr, attrText, '->', translated);
-          rootNode.setAttribute(attr, translated);
+        // 完全一致での翻訳を試みる
+        const trimmedAttrText = attrText.trim();
+        if (translationMap.exact[trimmedAttrText]) {
+          rootNode.setAttribute(attr, translationMap.exact[trimmedAttrText]);
           translatedCount++;
           
           // data-content属性の場合はテキストコンテンツも一致するか確認して置換
-          if (attr === 'data-content' && rootNode.textContent.trim() === attrText) {
-            rootNode.textContent = translated;
+          if (attr === 'data-content' && rootNode.textContent.trim() === trimmedAttrText) {
+            rootNode.textContent = translationMap.exact[trimmedAttrText];
+          }
+        } 
+        // 正規表現での翻訳を試みる
+        else {
+          let translated = false;
+          let newText = attrText;
+          
+          for (const regexEntry of translationMap.regex) {
+            regexEntry.pattern.lastIndex = 0;
+            if (regexEntry.pattern.test(attrText)) {
+              regexEntry.pattern.lastIndex = 0;
+              newText = attrText.replace(regexEntry.pattern, regexEntry.replacement);
+              translated = true;
+              break;
+            }
+          }
+          
+          if (translated && newText !== attrText) {
+            debugLog(`属性の正規表現翻訳: ${attr}="${attrText}" -> "${newText}"`);
+            rootNode.setAttribute(attr, newText);
+            translatedCount++;
+            
+            // data-content属性の場合はテキストコンテンツも一致するか確認して置換
+            if (attr === 'data-content' && rootNode.textContent.trim() === attrText.trim()) {
+              rootNode.textContent = newText;
+            }
           }
         }
       }
@@ -259,7 +349,7 @@ function translateElements(rootNode, translationMap) {
   return translatedCount;
 }
 
-// GitHub固有の要素を翻訳
+// GitHub固有の要素を翻訳 - 正規表現対応
 function translateGitHubSpecificElements(rootElement, translationMap) {
   let translatedCount = 0;
   
@@ -270,12 +360,7 @@ function translateGitHubSpecificElements(rootElement, translationMap) {
     // span要素内のテキストを取得
     const spans = item.querySelectorAll('span');
     spans.forEach(span => {
-      const text = span.textContent.trim();
-      const translated = translationMap[text];
-      
-      if (translated) {
-        debugLog('GitHub UnderlineNav 置換:', text, '->', translated);
-        span.textContent = translated;
+      if (translateTextNode(span, translationMap)) {
         translatedCount++;
       }
     });
@@ -283,27 +368,37 @@ function translateGitHubSpecificElements(rootElement, translationMap) {
     // SVGの後ろにあるテキストノードを処理
     for (const child of item.childNodes) {
       if (child.nodeType === Node.TEXT_NODE) {
-        const text = child.textContent.trim();
-        if (text && translationMap[text]) {
-          child.textContent = child.textContent.replace(text, translationMap[text]);
+        if (translateTextNode(child, translationMap)) {
           translatedCount++;
         }
       }
     }
     
-    // data-content属性を確認
+    // data-content属性を確認 - 完全一致
     if (item.hasAttribute('data-content')) {
       const content = item.getAttribute('data-content');
-      const translated = translationMap[content];
-      
-      if (translated) {
-        debugLog('GitHub data-content 置換:', content, '->', translated);
-        item.setAttribute('data-content', translated);
+      if (content && translationMap.exact[content]) {
+        debugLog('GitHub data-content 置換:', content, '->', translationMap.exact[content]);
+        item.setAttribute('data-content', translationMap.exact[content]);
         translatedCount++;
+      }
+      // 正規表現パターンによるマッチング
+      else if (content) {
+        for (const regexEntry of translationMap.regex) {
+          regexEntry.pattern.lastIndex = 0;
+          if (regexEntry.pattern.test(content)) {
+            regexEntry.pattern.lastIndex = 0;
+            const newContent = content.replace(regexEntry.pattern, regexEntry.replacement);
+            debugLog(`GitHub data-content 正規表現置換: "${content}" -> "${newContent}"`);
+            item.setAttribute('data-content', newContent);
+            translatedCount++;
+            break;
+          }
+        }
       }
     }
   });
-  
+
   // 特別処理: reponav-itemクラス (古いUIのリポジトリタブ)
   const repoNavItems = rootElement.querySelectorAll('.reponav-item');
   
@@ -311,12 +406,7 @@ function translateGitHubSpecificElements(rootElement, translationMap) {
     // span要素内のテキストを確認
     const spans = item.querySelectorAll('span');
     spans.forEach(span => {
-      const text = span.textContent.trim();
-      const translated = translationMap[text];
-      
-      if (translated) {
-        debugLog('GitHub repoNav 置換:', text, '->', translated);
-        span.textContent = translated;
+      if (translateTextNode(span, translationMap)) {
         translatedCount++;
       }
     });
@@ -328,18 +418,38 @@ function translateGitHubSpecificElements(rootElement, translationMap) {
   headerLinks.forEach(link => {
     if (link.hasAttribute('data-content')) {
       const content = link.getAttribute('data-content');
-      const translated = translationMap[content];
-      
-      if (translated) {
-        debugLog('GitHub header data-content 置換:', content, '->', translated);
-        link.setAttribute('data-content', translated);
+      // 完全一致
+      if (content && translationMap.exact[content]) {
+        debugLog('GitHub header data-content 置換:', content, '->', translationMap.exact[content]);
+        link.setAttribute('data-content', translationMap.exact[content]);
         
         // テキストも置換
         if (link.textContent.trim() === content) {
-          link.textContent = translated;
+          link.textContent = translationMap.exact[content];
         }
         
         translatedCount++;
+      }
+      // 正規表現マッチング
+      else if (content) {
+        for (const regexEntry of translationMap.regex) {
+          regexEntry.pattern.lastIndex = 0;
+          if (regexEntry.pattern.test(content)) {
+            regexEntry.pattern.lastIndex = 0;
+            const newContent = content.replace(regexEntry.pattern, regexEntry.replacement);
+            
+            debugLog(`GitHub header data-content 正規表現置換: "${content}" -> "${newContent}"`);
+            link.setAttribute('data-content', newContent);
+            
+            // テキストも置換
+            if (link.textContent.trim() === content) {
+              link.textContent = newContent;
+            }
+            
+            translatedCount++;
+            break;
+          }
+        }
       }
     }
   });
@@ -396,16 +506,36 @@ function setupMutationObserver(translationMap) {
         // data-content属性を翻訳
         uniqueElements.forEach(el => {
           const content = el.getAttribute('data-content');
-          if (content && translationMap[content]) {
-            debugLog(`動的data-content属性翻訳: "${content}" -> "${translationMap[content]}"`);
-            el.setAttribute('data-content', translationMap[content]);
+          if (content && translationMap.exact[content]) {
+            debugLog(`動的data-content属性翻訳: "${content}" -> "${translationMap.exact[content]}"`);
+            el.setAttribute('data-content', translationMap.exact[content]);
             
             // テキストコンテンツも一致する場合は翻訳
             if (el.textContent.trim() === content) {
-              el.textContent = translationMap[content];
+              el.textContent = translationMap.exact[content];
             }
             
             translatedCount++;
+          }
+          // 正規表現での翻訳を試みる
+          else if (content) {
+            for (const regexEntry of translationMap.regex) {
+              regexEntry.pattern.lastIndex = 0;
+              if (regexEntry.pattern.test(content)) {
+                regexEntry.pattern.lastIndex = 0;
+                const newContent = content.replace(regexEntry.pattern, regexEntry.replacement);
+                debugLog(`動的data-content属性 正規表現翻訳: "${content}" -> "${newContent}"`);
+                el.setAttribute('data-content', newContent);
+                
+                // テキストコンテンツも一致する場合は翻訳
+                if (el.textContent.trim() === content) {
+                  el.textContent = newContent;
+                }
+                
+                translatedCount++;
+                break;
+              }
+            }
           }
         });
       }
