@@ -2,7 +2,7 @@
 site: "github.com"
 language: "日本語"
 description: "GitHub UIの日本語翻訳"
-version: "0.1.0"
+version: "0.2.0"
 author: "223n"
 last_updated: "2025-03-09"
 
@@ -25,7 +25,7 @@ translations:
     translated: "探索"
     context: "メインナビゲーション"
     
-  # リポジトリページ
+  # リポジトリページタブ
   - original: "Code"
     translated: "コード"
     context: "リポジトリタブ"
@@ -57,8 +57,51 @@ translations:
   - original: "Settings"
     translated: "設定"
     context: "リポジトリタブ"
+
+  # アクションタブ内の要素
+  - original: "Workflows"
+    translated: "ワークフロー"
+    context: "アクションタブ"
     
-  # ボタン
+  - original: "Runs"
+    translated: "実行履歴"
+    context: "アクションタブ"
+    
+  # プロジェクトタブ内の要素
+  - original: "Projects (classic)"
+    translated: "プロジェクト(クラシック)"
+    context: "プロジェクトタブ"
+    
+  - original: "Projects (beta)"
+    translated: "プロジェクト(ベータ)"
+    context: "プロジェクトタブ"
+
+  # プロフィール要素
+  - original: "Repositories"
+    translated: "リポジトリ"
+    context: "プロフィール"
+    
+  - original: "Projects"
+    translated: "プロジェクト"
+    context: "プロフィール"
+    
+  - original: "Packages"
+    translated: "パッケージ"
+    context: "プロフィール"
+    
+  - original: "Stars"
+    translated: "スター"
+    context: "プロフィール"
+    
+  - original: "Followers"
+    translated: "フォロワー"
+    context: "プロフィール"
+    
+  - original: "Following"
+    translated: "フォロー中"
+    context: "プロフィール"
+    
+  # ボタン・アクション
   - original: "New"
     translated: "新規"
     context: "ボタン"
@@ -82,3 +125,32 @@ translations:
   - original: "Cancel"
     translated: "キャンセル"
     context: "ボタン"
+    
+  - original: "Fork"
+    translated: "フォーク"
+    context: "ボタン"
+    
+  - original: "Star"
+    translated: "スター"
+    context: "ボタン"
+    
+  - original: "Watch"
+    translated: "ウォッチ"
+    context: "ボタン"
+
+  # 特殊なテキスト（スペース処理の問題に対応）
+  - original: "Actions"
+    translated: "アクション"
+    context: "特殊要素"
+    
+  - original: "Projects"
+    translated: "プロジェクト"
+    context: "特殊要素"
+    
+  - original: " Actions"  # 先頭にスペースがある場合
+    translated: "アクション"
+    context: "特殊要素"
+    
+  - original: " Projects"  # 先頭にスペースがある場合
+    translated: "プロジェクト" 
+    context: "特殊要素"
