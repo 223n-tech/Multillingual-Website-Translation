@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub翻訳エクステンション</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>GitHub翻訳</h1>
+    </header>
+    
+    <main>
+      <div class="status-section">
+        <div class="status-row">
+          <span>翻訳状態:</span>
+          <span id="status-text" class="status-text">無効</span>
+        </div>
+        <div class="toggle-container">
+          <label class="switch">
+            <input type="checkbox" id="translation-toggle">
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="domain-section">
+        <h2>現在のサイト</h2>
+        <div id="current-domain-container" class="domain-info">
+          <div id="domain-name">未検出</div>
+          <div id="translation-available" class="badge hidden">翻訳あり</div>
+        </div>
+      </div>
+      
+      <div class="actions">
+        <button id="refresh-btn" class="btn primary">再翻訳</button>
+        <button id="options-btn" class="btn secondary">設定</button>
+      </div>
+    </main>
+    
+    <footer>
+      <a href="#" id="github-link" target="_blank">Githubリポジトリを開く</a>
+    </footer>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

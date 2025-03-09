@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub翻訳エクステンション - 設定</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>GitHub翻訳エクステンション - 設定</h1>
+    </header>
+    
+    <main>
+      <section class="card">
+        <h2>翻訳設定</h2>
+        <div class="form-group">
+          <label for="translation-active">翻訳機能:</label>
+          <div class="toggle-container">
+            <label class="switch">
+              <input type="checkbox" id="translation-active">
+              <span class="slider round"></span>
+            </label>
+            <span id="active-status">無効</span>
+          </div>
+        </div>
+      </section>
+      
+      <section class="card">
+        <h2>ドメイン設定</h2>
+        <div class="domain-list" id="domain-list">
+          <!-- ここにドメインリストが動的に追加されます -->
+        </div>
+        <div class="action-buttons">
+          <button id="add-domain-btn" class="btn primary">ドメインを追加</button>
+        </div>
+      </section>
+      
+      <section class="card">
+        <h2>設定のインポート・エクスポート</h2>
+        <div class="io-buttons">
+          <button id="export-btn" class="btn secondary">エクスポート</button>
+          <button id="import-btn" class="btn secondary">インポート</button>
+          <input type="file" id="import-file" accept=".yml,.yaml" style="display: none;">
+        </div>
+      </section>
+    </main>
+    
+    <footer>
+      <p>GitHub翻訳エクステンション &copy; 2025</p>
+    </footer>
+  </div>
+  
+  <!-- ドメイン追加/編集モーダル -->
+  <div id="domain-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">ドメインを追加</h2>
+        <span class="close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="domain-form">
+          <div class="form-group">
+            <label for="domain-input">ドメイン:</label>
+            <input type="text" id="domain-input" placeholder="例: github.com" required>
+          </div>
+          <div class="form-group">
+            <label for="name-input">設定名:</label>
+            <input type="text" id="name-input" placeholder="例: GitHub UI 翻訳" required>
+          </div>
+          <div class="form-group">
+            <label for="repository-input">リポジトリURL:</label>
+            <input type="text" id="repository-input" placeholder="例: https://raw.githubusercontent.com/username/translations/main/github-translations.yml" required>
+          </div>
+          <div class="form-group">
+            <label for="description-input">説明:</label>
+            <textarea id="description-input" placeholder="この設定の説明..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="domain-enabled">有効:</label>
+            <div class="toggle-container">
+              <label class="switch">
+                <input type="checkbox" id="domain-enabled" checked>
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-buttons">
+            <button type="submit" class="btn primary">保存</button>
+            <button type="button" id="cancel-btn" class="btn secondary">キャンセル</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <script src="../lib/js-yaml.min.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

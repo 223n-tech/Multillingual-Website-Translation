@@ -1,0 +1,195 @@
+/* ポップアップのスタイル */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: #24292e;
+  width: 320px;
+  overflow-x: hidden;
+}
+
+.container {
+  padding: 16px;
+}
+
+header {
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e1e4e8;
+  padding-bottom: 8px;
+}
+
+h1 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.status-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+}
+
+.status-text {
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.status-text.active {
+  color: #28a745;
+}
+
+.status-text.inactive {
+  color: #d73a49;
+}
+
+.domain-section {
+  margin-bottom: 16px;
+}
+
+.domain-info {
+  padding: 8px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  background-color: #28a745;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.badge.hidden {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn.primary {
+  background-color: #2ea44f;
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #22863a;
+}
+
+.btn.secondary {
+  background-color: #fafbfc;
+  border: 1px solid #e1e4e8;
+  color: #24292e;
+}
+
+.btn.secondary:hover {
+  background-color: #f3f4f6;
+}
+
+footer {
+  margin-top: 16px;
+  border-top: 1px solid #e1e4e8;
+  padding-top: 12px;
+  text-align: center;
+}
+
+a {
+  color: #0366d6;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* トグルスイッチのスタイル */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2ea44f;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2ea44f;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.slider.round {
+  border-radius: 24px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}

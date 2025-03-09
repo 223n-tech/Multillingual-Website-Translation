@@ -1,0 +1,298 @@
+/* 設定ページのスタイル */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: #24292e;
+  background-color: #f6f8fa;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  margin-bottom: 24px;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.card {
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.form-group label {
+  flex: 0 0 120px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+}
+
+#active-status {
+  margin-left: 12px;
+  font-weight: 500;
+}
+
+.domain-list {
+  margin-bottom: 16px;
+}
+
+.domain-item {
+  padding: 12px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.domain-info {
+  flex: 1;
+}
+
+.domain-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.domain-url {
+  font-size: 12px;
+  color: #586069;
+  margin-bottom: 4px;
+}
+
+.domain-description {
+  font-size: 13px;
+}
+
+.domain-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.domain-status {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.domain-status.enabled {
+  background-color: #28a745;
+  color: white;
+}
+
+.domain-status.disabled {
+  background-color: #d73a49;
+  color: white;
+}
+
+.action-buttons, 
+.io-buttons {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn.primary {
+  background-color: #2ea44f;
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #22863a;
+}
+
+.btn.secondary {
+  background-color: #fafbfc;
+  border: 1px solid #e1e4e8;
+  color: #24292e;
+}
+
+.btn.secondary:hover {
+  background-color: #f3f4f6;
+}
+
+.btn.danger {
+  background-color: #d73a49;
+  color: white;
+}
+
+.btn.danger:hover {
+  background-color: #cb2431;
+}
+
+.btn.icon {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+footer {
+  margin-top: 24px;
+  text-align: center;
+  color: #586069;
+  font-size: 13px;
+}
+
+/* モーダルのスタイル */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 10% auto;
+  padding: 0;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 500px;
+  max-width: 90%;
+}
+
+.modal-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid #e1e4e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.close {
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: #24292e;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* トグルスイッチのスタイル */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2ea44f;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2ea44f;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.slider.round {
+  border-radius: 24px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
