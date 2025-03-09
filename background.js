@@ -21,7 +21,7 @@ chrome.runtime.onInstalled.addListener(async () => {
       {
         domain: "github.com",
         name: "GitHub UI 翻訳",
-        repository: "https://raw.githubusercontent.com/223n-tech/Multillingual-Website-Translation/refs/heads/master/config/translation-config-github.yml",
+        repository: "https://raw.githubusercontent.com/223n-tech/github-translation/refs/heads/master/translation-config-github.yml",
         enabled: true,
         description: "GitHub UI の日本語翻訳"
       }

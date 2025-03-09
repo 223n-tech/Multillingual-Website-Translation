@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GitHub翻訳エクステンション",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "GitHubリポジトリに保存された翻訳データを使用してウェブページを翻訳します",
   "permissions": [
     "storage",
