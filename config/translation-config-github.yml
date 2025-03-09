@@ -105,10 +105,6 @@ translations:
   - original: "Following"
     translated: "フォロー中"
     context: "プロフィール"
-
-  - original: "Achievements"
-    translated: "実績"
-    context: "特殊要素"
     
   # ボタン・アクション
   - original: "New"
@@ -166,6 +162,14 @@ translations:
     
   - original: " Projects"  # 先頭にスペースがある場合
     translated: "プロジェクト" 
+    context: "特殊要素"
+
+  - original: "Achievements"
+    translated: "実績"
+    context: "特殊要素"
+
+  - original: "Contribution activity"
+    translated: "貢献活動"
     context: "特殊要素"
     
   # 正規表現パターンによる翻訳（新機能）
