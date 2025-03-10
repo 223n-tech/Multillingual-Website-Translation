@@ -70,8 +70,13 @@
             <input type="text" id="name-input" placeholder="例: GitHub UI 翻訳" required>
           </div>
           <div class="form-group">
-            <label for="repository-input">リポジトリURL:</label>
+            <label for="repository-input">翻訳ファイルURL:</label>
             <input type="text" id="repository-input" placeholder="例: https://raw.githubusercontent.com/username/translations/main/github-translations.yml" required>
+          </div>
+          <div class="form-group">
+            <label for="context-mapping-input">コンテキストマッピングURL:</label>
+            <input type="text" id="context-mapping-input" placeholder="例: https://raw.githubusercontent.com/username/translations/main/context-mapping.yml">
+            <div class="help-text">オプション: コンテキスト定義ファイル。指定がない場合はデフォルト設定を使用します。</div>
           </div>
           <div class="form-group">
             <label for="description-input">説明:</label>
@@ -95,89 +100,9 @@
     </div>
   </div>
   
-  <!-- 翻訳エントリー編集モーダル -->
-  <div id="entry-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="entry-modal-title">翻訳エントリー管理</h2>
-        <span class="close" id="entry-modal-close">&times;</span>
-      </div>
-      <div class="modal-body">
-        <div class="entry-list-actions">
-          <button id="add-entry-btn" class="btn primary">エントリー追加</button>
-          <button id="test-regex-btn" class="btn secondary">正規表現テスト</button>
-        </div>
-        
-        <div class="entry-list-container">
-          <div id="entry-list" class="entry-list">
-            <!-- ここに翻訳エントリーがリストされます -->
-          </div>
-        </div>
-        
-        <!-- 追加/編集フォーム -->
-        <div id="entry-edit-form" class="entry-edit-form" style="display: none;">
-          <h3 id="entry-form-title">翻訳エントリーの追加</h3>
-          <form id="translation-entry-form">
-            <div class="form-group">
-              <label for="entry-original">元のテキスト:</label>
-              <input type="text" id="entry-original" required>
-            </div>
-            <div class="form-group">
-              <label for="entry-translated">翻訳後テキスト:</label>
-              <input type="text" id="entry-translated" required>
-            </div>
-            <div class="form-group">
-              <label for="entry-context">コンテキスト:</label>
-              <input type="text" id="entry-context" placeholder="例: メインナビゲーション">
-            </div>
-            <div class="form-group checkbox-group">
-              <label for="entry-regex">正規表現を使用:</label>
-              <input type="checkbox" id="entry-regex">
-              <span class="help-text">正規表現を使うと、パターンマッチングが可能になります。$&や$1などの置換グループも使えます。</span>
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="btn primary">保存</button>
-              <button type="button" id="entry-cancel-btn" class="btn secondary">キャンセル</button>
-            </div>
-          </form>
-        </div>
-        
-        <!-- 正規表現テストツール -->
-        <div id="regex-test-tool" class="regex-test-tool" style="display: none;">
-          <h3>正規表現テスト</h3>
-          <div class="form-group">
-            <label for="regex-pattern">正規表現パターン:</label>
-            <input type="text" id="regex-pattern" placeholder="例: Issue #\d+">
-          </div>
-          <div class="form-group">
-            <label for="regex-replacement">置換テキスト:</label>
-            <input type="text" id="regex-replacement" placeholder="例: 課題 #$&">
-          </div>
-          <div class="form-group">
-            <label for="regex-test-input">テスト文字列:</label>
-            <textarea id="regex-test-input" placeholder="ここにテストしたいテキストを入力"></textarea>
-          </div>
-          <div class="form-actions">
-            <button id="run-regex-test" class="btn primary">テスト実行</button>
-            <button id="regex-test-cancel" class="btn secondary">キャンセル</button>
-          </div>
-          <div class="test-result">
-            <h4>結果:</h4>
-            <div id="regex-test-result" class="result-display">
-              <!-- テスト結果がここに表示されます -->
-            </div>
-          </div>
-        </div>
-        
-        <div class="modal-buttons entry-modal-buttons">
-          <button id="save-entries-btn" class="btn primary">すべて保存</button>
-          <button id="close-entry-modal-btn" class="btn secondary">閉じる</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  
   <script src="../lib/js-yaml.min.js"></script>
-  <script src="options.js"></script>
+  <script src="options-core.js"></script>
+  <script src="options-domain.js"></script>
+  <script src="options-io.js"></script>
 </body>
 </html>

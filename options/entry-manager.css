@@ -1,0 +1,416 @@
+/* 全画面表示のためのスタイル追加 */
+body {
+  padding: 0;
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.container {
+  flex: 1;
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+header {
+  margin: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid #e1e4e8;
+  height: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 20px;
+}
+
+/* 上部情報エリアの高さを固定 */
+.top-area {
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: auto;
+  min-height: auto;
+}
+
+/* ドメイン情報エリア - 高さ固定 */
+.domain-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  height: auto;
+  min-height: auto;
+}
+
+.domain-name {
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0;
+}
+
+.domain-details {
+  color: #586069;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 統計情報エリア - 高さ固定 */
+.stats-container {
+  display: flex;
+  gap: 16px;
+  height: auto;
+  min-height: auto;
+}
+
+.stat-box {
+  flex: 1;
+  padding: 8px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.stat-number {
+  font-size: 18px;
+  font-weight: 600;
+  color: #24292e;
+  margin: 0;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #586069;
+  margin: 0;
+}
+
+/* 2カラムレイアウト - 最大限の縦スペースを確保 */
+.two-column-layout {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  overflow: hidden;
+  height: calc(100vh - 180px); /* ヘッダーと上部エリアを除いた高さ */
+}
+
+/* 左カラム - リスト表示 */
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+}
+
+.list-header {
+  padding: 8px 12px;
+  background-color: #f6f8fa;
+  border-bottom: 1px solid #e1e4e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: auto;
+  min-height: auto;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+}
+
+.filter-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-select {
+  padding: 6px 10px;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  background-color: white;
+}
+
+.entry-list-container {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+}
+
+.entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entry-item {
+  padding: 10px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.entry-item:hover {
+  background-color: #f6f8fa;
+}
+
+.entry-item.selected {
+  border-color: #0366d6;
+  background-color: #f1f8ff;
+}
+
+.entry-text {
+  flex: 1;
+}
+
+.entry-original {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.entry-translated {
+  font-size: 13px;
+  color: #586069;
+}
+
+.entry-info {
+  display: flex;
+  margin-top: 6px;
+  gap: 6px;
+  align-items: center;
+}
+
+.entry-badge {
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 11px;
+  background-color: #e1e4e8;
+}
+
+.entry-badge.regex {
+  background-color: #6f42c1;
+  color: white;
+}
+
+.list-footer {
+  padding: 8px 12px;
+  background-color: #f6f8fa;
+  border-top: 1px solid #e1e4e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: auto;
+  min-height: auto;
+}
+
+/* 右カラム - 編集/操作エリア */
+.right-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.edit-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 8px 12px;
+  background-color: #f6f8fa;
+  border-bottom: 1px solid #e1e4e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: auto;
+  min-height: auto;
+}
+
+.panel-title {
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0;
+}
+
+.panel-content {
+  flex: 1;
+  padding: 16px;
+  overflow: auto;
+}
+
+.tab-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tab-headers {
+  display: flex;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.tab-header {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-header.active {
+  border-bottom: 2px solid #2ea44f;
+  font-weight: 600;
+}
+
+.tab-content {
+  display: none;
+  flex: 1;
+  padding: 16px;
+  overflow: auto;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.entry-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.regex-test-tool {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.test-result {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+}
+
+.result-display {
+  padding: 8px;
+  background-color: white;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  min-height: 60px;
+  max-height: 150px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.panel-footer {
+  padding: 8px 12px;
+  background-color: #f6f8fa;
+  border-top: 1px solid #e1e4e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: auto;
+  min-height: auto;
+}
+
+.no-selection-message {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #586069;
+  text-align: center;
+  padding: 20px;
+}
+
+.no-selection-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #e1e4e8;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 20px;
+  color: #586069;
+}
+
+.help-text {
+  font-size: 12px;
+  color: #586069;
+}
+
+.match-highlight {
+  background-color: #ffea7f;
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+.no-match {
+  color: #d73a49;
+}
+
+.successful-match {
+  color: #28a745;
+}
+
+/* ボタンとアクションのコンパクト化 */
+.btn {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* フォーム要素のコンパクト化 */
+.form-group {
+  margin-bottom: 12px;
+}

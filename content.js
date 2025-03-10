@@ -1,5 +1,4 @@
-// content.js - メインコンテンツスクリプト
-// 分割ファイルを参照してまとめる
+// content.js - メインコンテンツスクリプト（簡潔化バージョン）
 
 // デバッグフラグ
 const DEBUG = true;
@@ -11,20 +10,21 @@ function debugLog(...args) {
   }
 }
 
-// 翻訳データとコンテキスト関連の変数
+// グローバル変数
 let translations = null;
 let contextMapping = null;
+let translationMaps = null;
 let currentDomain = null;
 let isTranslating = false;
-let processedElements = new WeakSet(); // 処理済み要素を追跡
+let processedElements = new WeakSet();
+const SKIP_TAGS = ['script', 'style', 'textarea', 'input', 'code', 'pre'];
 
 // 初期化
 function initialize() {
-  // 現在のドメインを取得
   currentDomain = window.location.hostname;
   debugLog('初期化開始', currentDomain);
   
-  // バックグラウンドスクリプトからの指示を待つ
+  // メッセージリスナー
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     debugLog('メッセージ受信', message);
     if (message.action === 'startTranslation') {
@@ -34,114 +34,106 @@ function initialize() {
       resetTranslations();
       sendResponse({success: true});
     }
-    return true; // 非同期レスポンスのためにtrueを返す
+    return true;
   });
   
-  // 初回実行時にも翻訳データを読み込む
-  debugLog('初回翻訳データ読み込み開始');
-  loadTranslationsAndMapping();
-  
-  // 遅延再翻訳（動的コンテンツ対応）
+  // 遅延初期化（DOMがより完成してから）
   setTimeout(() => {
-    debugLog('遅延翻訳実行');
     loadTranslationsAndMapping();
-  }, 2000); // 2秒後に再度翻訳を実行
+  }, 500);
 }
 
 // 翻訳データとコンテキストマッピングの読み込み
-async function loadTranslationsAndMapping() {
-  try {
-    // 翻訳中フラグをチェック
-    if (isTranslating) {
-      debugLog('すでに翻訳処理中のため、スキップします');
-      return;
-    }
-    
-    debugLog('翻訳データ読み込み開始', currentDomain);
-    
-    // バックグラウンドスクリプトから翻訳データとコンテキストマッピングを取得
-    chrome.runtime.sendMessage(
-      { action: 'getTranslationsAndMapping', domain: currentDomain },
-      response => {
-        debugLog('翻訳データレスポンス受信', response);
-        
-        if (response && response.success) {
-          try {
-            // 翻訳データのYAMLをパース
-            if (response.translations) {
-              debugLog('YAML解析開始 (翻訳データ)');
-              translations = jsyaml.load(response.translations);
-              debugLog('YAML解析完了 (翻訳データ)', translations);
-            }
-            
-            // コンテキストマッピングのYAMLをパース
-            if (response.contextMapping) {
-              debugLog('YAML解析開始 (コンテキストマッピング)');
-              contextMapping = jsyaml.load(response.contextMapping);
-              debugLog('YAML解析完了 (コンテキストマッピング)', contextMapping);
-            } else {
-              debugLog('コンテキストマッピングデータなし、デフォルト設定を使用します');
-              contextMapping = createDefaultContextMapping();
-            }
-            
-            // 両方のデータが利用可能なら翻訳を実行
-            if (translations && contextMapping) {
-              startTranslation();
-            }
-          } catch (yamlError) {
-            console.error('YAMLパース失敗:', yamlError);
-            debugLog('YAML解析失敗', yamlError);
-          }
-        } else {
-          // 後方互換性のために旧メッセージタイプもサポート
-          chrome.runtime.sendMessage(
-            { action: 'getTranslations', domain: currentDomain },
-            legacyResponse => {
-              if (legacyResponse && legacyResponse.success && legacyResponse.translations) {
-                try {
-                  // YAMLをパース
-                  debugLog('YAML解析開始 (旧形式翻訳データ)');
-                  translations = jsyaml.load(legacyResponse.translations);
-                  debugLog('YAML解析完了 (旧形式翻訳データ)', translations);
-                  
-                  // デフォルトのコンテキストマッピングを使用
-                  contextMapping = createDefaultContextMapping();
-                  
-                  // 翻訳を実行
-                  startTranslation();
-                } catch (yamlError) {
-                  console.error('YAMLパース失敗:', yamlError);
-                  debugLog('YAML解析失敗', yamlError);
-                }
-              } else {
-                console.error('翻訳データの取得に失敗しました', legacyResponse ? legacyResponse.error : 'レスポンスなし');
-                debugLog('翻訳データ取得失敗', legacyResponse);
-              }
-            }
-          );
-        }
-      }
-    );
-  } catch (error) {
-    console.error('翻訳データの読み込みに失敗しました:', error);
-    debugLog('翻訳データ読み込み例外', error);
+function loadTranslationsAndMapping() {
+  if (isTranslating) {
+    debugLog('すでに翻訳処理中のため、スキップします');
+    return;
   }
+  
+  debugLog('翻訳データ読み込み開始', currentDomain);
+  
+  chrome.runtime.sendMessage(
+    { action: 'getTranslationsAndMapping', domain: currentDomain },
+    response => {
+      if (response && response.success) {
+        try {
+          // 翻訳データのYAMLをパース
+          if (response.translations) {
+            translations = jsyaml.load(response.translations);
+          }
+          
+          // コンテキストマッピングのYAMLをパース
+          if (response.contextMapping) {
+            contextMapping = jsyaml.load(response.contextMapping);
+          } else {
+            contextMapping = createDefaultContextMapping();
+          }
+          
+          // 両方のデータが利用可能なら翻訳を実行
+          if (translations && contextMapping) {
+            startTranslation();
+          }
+        } catch (yamlError) {
+          console.error('YAMLパース失敗:', yamlError);
+        }
+      } else {
+        console.error('翻訳データの取得に失敗しました', response ? response.error : 'レスポンスなし');
+      }
+    }
+  );
+}
+
+// 翻訳マップを作成
+function createTranslationMap(translationsList) {
+  const map = {
+    byContext: {},      // コンテキスト別マップ
+    regexPatterns: [],  // 正規表現パターン
+    global: {}          // グローバル翻訳
+  };
+  
+  translationsList.forEach(entry => {
+    const context = entry.context || "";
+    
+    // 正規表現パターンの場合
+    if (entry.regex) {
+      try {
+        map.regexPatterns.push({
+          pattern: new RegExp(entry.original, 'g'),
+          replacement: entry.translated,
+          context: context
+        });
+      } catch (error) {
+        console.error(`無効な正規表現: ${entry.original}`, error);
+      }
+    } 
+    // 通常のテキストの場合
+    else {
+      const key = entry.original.trim();
+      
+      // コンテキストなしの場合はグローバル翻訳
+      if (context === "") {
+        map.global[key] = entry.translated;
+      } 
+      // コンテキスト指定ありの場合
+      else {
+        if (!map.byContext[context]) {
+          map.byContext[context] = {};
+        }
+        map.byContext[context][key] = entry.translated;
+      }
+    }
+  });
+  
+  return map;
 }
 
 // 翻訳の実行
 function startTranslation() {
-  if (!translations || !translations.translations) {
-    debugLog('翻訳データが正しくロードされていないため、翻訳をスキップします', translations);
-    return;
-  }
-  
-  if (!contextMapping) {
-    debugLog('コンテキストマッピングが正しくロードされていないため、翻訳をスキップします', contextMapping);
+  if (!translations || !translations.translations || !contextMapping) {
     return;
   }
   
   if (isTranslating) {
-    debugLog('すでに翻訳処理中のため、スキップします');
     return;
   }
   
@@ -149,129 +141,425 @@ function startTranslation() {
   isTranslating = true;
   
   try {
-    // 翻訳対象カウンター
+    const startTime = performance.now();
     let translatedCount = 0;
     
-    // ページ内のテキストノードをすべて検索して翻訳
-    const startTime = performance.now();
-    
-    // コンテキストごとに分類した翻訳マップを作成
-    const translationMaps = createContextTranslationMaps(translations.translations);
-    debugLog('翻訳マップ作成完了', Object.keys(translationMaps.byContext).length + '個のコンテキスト');
-    
-    // 正規表現パターン用の翻訳マップ
-    debugLog('正規表現パターン数', translationMaps.regexPatterns.length + '個');
+    // 翻訳マップを作成（初回のみ）
+    if (!translationMaps) {
+      translationMaps = createTranslationMap(translations.translations);
+    }
     
     // 処理済み要素をリセット
     processedElements = new WeakSet();
-
-    // 特定のキーワードを直接翻訳
-    translatedCount += translateDirectKeywords(document.body);
     
-    // コンテキストマッピングに基づいて翻訳を適用
-    translatedCount += applyTranslationsWithContextMapping(document.body, translationMaps, contextMapping);
+    // バッチ処理で翻訳を適用
+    batchProcessTranslation(document.body, function() {
+      const endTime = performance.now();
+      debugLog(`翻訳完了 (${(endTime - startTime).toFixed(2)}ms)`);
+      
+      // MutationObserverを設定
+      setupMutationObserver();
+      
+      isTranslating = false;
+    });
     
-    // GitHub固有の特殊要素を処理
-    if (currentDomain.includes('github.com')) {
-      translatedCount += processGitHubSpecificElements(document.body, translationMaps, contextMapping);
-    }
-    
-    const endTime = performance.now();
-    
-    // MutationObserverを設定してDOMの変更を監視
-    setupMutationObserver(translationMaps, contextMapping);
-    
-    debugLog(`翻訳完了: ${translatedCount}個の翻訳を適用 (${(endTime - startTime).toFixed(2)}ms)`);
   } catch (error) {
     console.error('翻訳実行エラー:', error);
-    debugLog('翻訳実行例外', error);
-  } finally {
     isTranslating = false;
   }
 }
 
-// 翻訳をリセットする関数
-function resetTranslations() {
-  debugLog('翻訳リセット開始');
+// バッチ処理で翻訳
+function batchProcessTranslation(rootElement, callback) {
+  // 要素のリストを取得
+  const elements = [];
+  const textNodes = [];
   
-  // MutationObserverを切断
-  if (window.translationObserver) {
-    window.translationObserver.disconnect();
-    window.translationObserver = null;
-    debugLog('MutationObserver切断完了');
+  // 要素を収集する関数
+  function collectElements(node) {
+    if (!node) return;
+    
+    // 要素ノードの場合
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (processedElements.has(node)) return;
+      
+      const tagName = node.tagName.toLowerCase();
+      if (SKIP_TAGS.includes(tagName) || node.isContentEditable) {
+        return;
+      }
+      
+      elements.push(node);
+      processedElements.add(node);
+    }
+    // テキストノードの場合
+    else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+      textNodes.push(node);
+    }
+    
+    // 子ノードを処理
+    if (node.childNodes && node.childNodes.length > 0) {
+      for (const child of node.childNodes) {
+        collectElements(child);
+      }
+    }
   }
   
-  // 処理済み要素リストをクリア
-  processedElements = new WeakSet();
+  // 要素の収集を開始
+  collectElements(rootElement);
   
-  debugLog('ページ再読み込み実行');
-  // ここでは簡単化のためページの再読み込みを行う
-  window.location.reload();
+  // バッチ処理のパラメータ
+  const BATCH_SIZE = 200;
+  let elementIndex = 0;
+  let textNodeIndex = 0;
+  
+  // 要素バッチの処理
+  function processElementBatch() {
+    if (elementIndex >= elements.length) {
+      // 要素処理が終わったらテキストノードへ
+      processTextNodeBatch();
+      return;
+    }
+    
+    const endIndex = Math.min(elementIndex + BATCH_SIZE, elements.length);
+    
+    for (let i = elementIndex; i < endIndex; i++) {
+      translateElementAttributes(elements[i]);
+    }
+    
+    elementIndex = endIndex;
+    setTimeout(processElementBatch, 0);
+  }
+  
+  // テキストノードバッチの処理
+  function processTextNodeBatch() {
+    if (textNodeIndex >= textNodes.length) {
+      // 全て完了したらGitHub特殊処理へ
+      if (currentDomain.includes('github.com')) {
+        processGitHubElements();
+      } else {
+        callback();
+      }
+      return;
+    }
+    
+    const endIndex = Math.min(textNodeIndex + BATCH_SIZE, textNodes.length);
+    
+    for (let i = textNodeIndex; i < endIndex; i++) {
+      translateTextNode(textNodes[i]);
+    }
+    
+    textNodeIndex = endIndex;
+    setTimeout(processTextNodeBatch, 0);
+  }
+  
+  // GitHub特殊要素の処理
+  function processGitHubElements() {
+    // フッター要素の処理
+    if (currentDomain.includes('github.com')) {
+      processFooterElements(rootElement);
+      processHeaderElements(rootElement);
+    }
+    
+    callback();
+  }
+  
+  // バッチ処理の開始
+  processElementBatch();
 }
 
-// 重要なキーワードを直接翻訳するユーティリティ関数
-function translateDirectKeywords(rootElement) {
-  let translatedCount = 0;
-  const directTranslations = {
-    "Issues": "課題",
-    "Pull requests": "プルリクエスト",
-    "Marketplace": "マーケットプレイス",
-    "Explore": "探索"
-  };
+// テキストノードの翻訳
+function translateTextNode(node) {
+  if (!node.textContent.trim()) return false;
   
-  // テキストノードとdata-content属性を検索
-  const textWalker = document.createTreeWalker(
-    rootElement, 
-    NodeFilter.SHOW_TEXT, 
-    null, 
-    false
-  );
+  const originalText = node.textContent;
+  let text = originalText;
+  let translated = false;
   
-  // テキストノードを処理
-  let textNode;
-  while (textNode = textWalker.nextNode()) {
-    const text = textNode.textContent.trim();
-    if (directTranslations[text]) {
-      textNode.textContent = textNode.textContent.replace(
-        text,
-        directTranslations[text]
+  // 親要素のコンテキストを判定
+  const parentElement = node.parentElement;
+  if (!parentElement) return false;
+  
+  const elementContext = determineElementContext(parentElement, contextMapping);
+  
+  // 1. コンテキスト指定の翻訳
+  if (elementContext && translationMaps.byContext[elementContext]) {
+    const trimmedText = text.trim();
+    if (translationMaps.byContext[elementContext][trimmedText]) {
+      text = text.replace(
+        trimmedText, 
+        translationMaps.byContext[elementContext][trimmedText]
       );
-      translatedCount++;
-      debugLog(`直接翻訳: "${text}" -> "${directTranslations[text]}"`);
+      translated = true;
     }
   }
   
-  // data-content属性を処理
-  const elementsWithDataContent = rootElement.querySelectorAll('[data-content]');
-  elementsWithDataContent.forEach(el => {
-    const content = el.getAttribute('data-content');
-    if (directTranslations[content]) {
-      el.setAttribute('data-content', directTranslations[content]);
-      if (el.textContent.trim() === content) {
-        el.textContent = directTranslations[content];
-      }
-      translatedCount++;
-      debugLog(`直接data-content翻訳: "${content}" -> "${directTranslations[content]}"`);
+  // 2. グローバル翻訳
+  if (!translated && contextMapping.settings.empty_context === "global") {
+    const trimmedText = text.trim();
+    if (translationMaps.global[trimmedText]) {
+      text = text.replace(
+        trimmedText, 
+        translationMaps.global[trimmedText]
+      );
+      translated = true;
     }
-  });
+  }
   
-  // ActionListItem-label クラスの要素を処理
-  const actionListItems = rootElement.querySelectorAll('.ActionListItem-label');
-  actionListItems.forEach(el => {
-    const text = el.textContent.trim();
-    if (directTranslations[text]) {
-      el.textContent = directTranslations[text];
+  // 3. 正規表現での翻訳
+  if (!translated) {
+    for (const regexEntry of translationMaps.regexPatterns) {
+      // コンテキストチェック
+      if (regexEntry.context !== "" && 
+          regexEntry.context !== elementContext && 
+          !isRegexApplicable(parentElement, regexEntry.context, contextMapping)) {
+        continue;
+      }
+      
+      // 正規表現をリセット
+      regexEntry.pattern.lastIndex = 0;
+      
+      // テスト実行
+      if (regexEntry.pattern.test(text)) {
+        regexEntry.pattern.lastIndex = 0;
+        const newText = text.replace(regexEntry.pattern, regexEntry.replacement);
+        
+        if (newText !== text) {
+          text = newText;
+          translated = true;
+          break;
+        }
+      }
+    }
+  }
+  
+  // 翻訳が行われた場合はテキストを更新
+  if (translated && text !== originalText) {
+    node.textContent = text;
+    return true;
+  }
+  
+  return false;
+}
+
+// 要素の属性を翻訳
+function translateElementAttributes(element) {
+  const attributesToTranslate = ['aria-label', 'alt', 'placeholder', 'title', 'data-content'];
+  const elementContext = determineElementContext(element, contextMapping);
+  let translatedCount = 0;
+  
+  attributesToTranslate.forEach(attr => {
+    if (!element.hasAttribute(attr)) return;
+    
+    const attrText = element.getAttribute(attr);
+    if (!attrText.trim()) return;
+    
+    let translated = false;
+    let newText = attrText;
+    
+    // 1. コンテキスト指定の翻訳
+    if (elementContext && translationMaps.byContext[elementContext]) {
+      const trimmedAttrText = attrText.trim();
+      if (translationMaps.byContext[elementContext][trimmedAttrText]) {
+        newText = translationMaps.byContext[elementContext][trimmedAttrText];
+        translated = true;
+      }
+    }
+    
+    // 2. グローバル翻訳
+    if (!translated && contextMapping.settings.empty_context === "global") {
+      const trimmedAttrText = attrText.trim();
+      if (translationMaps.global[trimmedAttrText]) {
+        newText = translationMaps.global[trimmedAttrText];
+        translated = true;
+      }
+    }
+    
+    // 3. 正規表現での翻訳
+    if (!translated) {
+      for (const regexEntry of translationMaps.regexPatterns) {
+        if (regexEntry.context !== "" && 
+            regexEntry.context !== elementContext &&
+            !isRegexApplicable(element, regexEntry.context, contextMapping)) {
+          continue;
+        }
+        
+        regexEntry.pattern.lastIndex = 0;
+        if (regexEntry.pattern.test(attrText)) {
+          regexEntry.pattern.lastIndex = 0;
+          const replacedText = attrText.replace(regexEntry.pattern, regexEntry.replacement);
+          
+          if (replacedText !== attrText) {
+            newText = replacedText;
+            translated = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    // 翻訳が行われた場合は属性を更新
+    if (translated && newText !== attrText) {
+      element.setAttribute(attr, newText);
       translatedCount++;
-      debugLog(`ActionListItem-label翻訳: "${text}" -> "${directTranslations[text]}"`);
+      
+      // data-content属性の場合はテキストも更新
+      if (attr === 'data-content' && element.textContent.trim() === attrText.trim()) {
+        element.textContent = newText;
+      }
     }
   });
   
   return translatedCount;
 }
 
+// フッター要素の処理
+function processFooterElements(rootElement) {
+  // フッター要素を検索
+  const footerElements = rootElement.querySelectorAll(
+    'footer a, [data-analytics-event*="Footer"], .footer-links a, .Link--secondary.Link'
+  );
+  
+  footerElements.forEach(element => {
+    if (processedElements.has(element)) return;
+    
+    const text = element.textContent.trim();
+    if (!text) return;
+    
+    // フッターのコンテキストで翻訳
+    if (translationMaps.byContext["フッター"] && 
+        translationMaps.byContext["フッター"][text]) {
+      element.textContent = translationMaps.byContext["フッター"][text];
+      processedElements.add(element);
+      return;
+    }
+    
+    // グローバル翻訳
+    if (contextMapping.settings.empty_context === "global" && 
+        translationMaps.global[text]) {
+      element.textContent = translationMaps.global[text];
+      processedElements.add(element);
+    }
+  });
+}
+
+// ヘッダー要素の処理
+function processHeaderElements(rootElement) {
+  // 直接翻訳キーワード
+  const directTranslations = {
+    "Issues": "課題",
+    "Pull requests": "プルリクエスト",
+    "Marketplace": "マーケットプレイス",
+    "Explore": "探索",
+    "Code": "コード",
+    "Actions": "アクション",
+    "Projects": "プロジェクト",
+    "Wiki": "ウィキ",
+    "Security": "セキュリティ",
+    "Insights": "インサイト",
+    "Settings": "設定",
+    "Discussions": "ディスカッション"
+  };
+  
+  // ヘッダー要素を検索
+  const headerElements = rootElement.querySelectorAll(
+    '.AppHeader-globalBar a, .HeaderMenu-link, .header-nav-item'
+  );
+  
+  headerElements.forEach(element => {
+    if (processedElements.has(element)) return;
+    
+    const text = element.textContent.trim();
+    if (directTranslations[text]) {
+      element.textContent = directTranslations[text];
+      processedElements.add(element);
+    }
+  });
+}
+
+// MutationObserver設定
+function setupMutationObserver() {
+  if (window.translationObserver) {
+    window.translationObserver.disconnect();
+  }
+  
+  // デバウンスタイマー
+  let debounceTimer = null;
+  
+  window.translationObserver = new MutationObserver(mutations => {
+    if (isTranslating) return;
+    
+    // 短時間に連続する変更をまとめて処理
+    if (debounceTimer) clearTimeout(debounceTimer);
+    
+    debounceTimer = setTimeout(() => {
+      isTranslating = true;
+      
+      try {
+        // 変更されたノードを収集
+        const changedNodes = new Set();
+        
+        mutations.forEach(mutation => {
+          // 追加されたノード
+          mutation.addedNodes.forEach(node => {
+            if ((node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) && 
+                !processedElements.has(node)) {
+              changedNodes.add(node);
+            }
+          });
+          
+          // 変更されたノード
+          if (mutation.type === 'attributes' || mutation.type === 'characterData') {
+            changedNodes.add(mutation.target);
+          }
+        });
+        
+        // 収集したノードを処理
+        if (changedNodes.size > 0) {
+          changedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (!processedElements.has(node)) {
+                batchProcessTranslation(node, () => {
+                  isTranslating = false;
+                });
+              }
+            } else if (node.nodeType === Node.TEXT_NODE) {
+              translateTextNode(node);
+            }
+          });
+        } else {
+          isTranslating = false;
+        }
+      } catch (error) {
+        console.error('MutationObserver処理エラー:', error);
+        isTranslating = false;
+      }
+    }, 100); // 100msのデバウンス
+  });
+  
+  // 必要な属性のみを監視
+  window.translationObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ['data-content', 'aria-label', 'title', 'placeholder']
+  });
+}
+
+// 翻訳のリセット
+function resetTranslations() {
+  debugLog('翻訳リセット開始');
+  
+  if (window.translationObserver) {
+    window.translationObserver.disconnect();
+    window.translationObserver = null;
+  }
+  
+  processedElements = new WeakSet();
+  window.location.reload();
+}
+
 // 初期化を実行
-debugLog('コンテンツスクリプト読み込み完了、初期化開始');
-// DOMContentLoadedイベントが既に発生している場合のフォールバック
 if (document.readyState === 'interactive' || document.readyState === 'complete') {
   initialize();
 } else {

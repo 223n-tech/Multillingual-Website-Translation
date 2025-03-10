@@ -1,5 +1,4 @@
-// バックグラウンドスクリプト
-// ドメイン設定の初期化とイベントリスナーの設定
+// バックグラウンドスクリプト - GitHub Raw対応版
 
 // デバッグフラグ
 const DEBUG = true;
@@ -25,6 +24,15 @@ chrome.runtime.onInstalled.addListener(async () => {
         contextMapping: "https://raw.githubusercontent.com/223n-tech/github-translation/refs/heads/master/context-mapping.yml",
         enabled: true,
         description: "GitHub UI の日本語翻訳"
+      },
+      // GitHub Raw対応
+      {
+        domain: "raw.githubusercontent.com",
+        name: "GitHub Raw コンテンツ",
+        repository: "https://raw.githubusercontent.com/223n-tech/github-translation/refs/heads/master/translation-config-github.yml",
+        contextMapping: "https://raw.githubusercontent.com/223n-tech/github-translation/refs/heads/master/context-mapping.yml",
+        enabled: false, // デフォルトでは無効
+        description: "GitHub Raw コンテンツの表示（翻訳ファイル閲覧用）"
       }
     ]
   };
@@ -61,7 +69,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // ドメインに基づいて翻訳データとコンテキストマッピングを取得
     debugLog('翻訳データとマッピング取得リクエスト:', message.domain);
     
-    fetchTranslationsAndMappingForDomain(message.domain)
+    // raw.githubusercontent.comのドメインの場合はgithub.comの設定を使用
+    const domain = message.domain === 'raw.githubusercontent.com' ? 'github.com' : message.domain;
+    
+    fetchTranslationsAndMappingForDomain(domain)
       .then(data => {
         debugLog('翻訳データとマッピング取得成功');
         sendResponse({ 
@@ -99,7 +110,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // 現在のタブのURLが変更されたとき
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    const domain = new URL(tab.url).hostname;
+    const url = new URL(tab.url);
+    const domain = url.hostname;
     debugLog('タブ更新検出:', domain, tabId);
     
     // タブが完全に読み込まれたときに、そのドメインの翻訳設定を確認
@@ -107,14 +119,16 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       debugLog('設定読み込み:', data.settings);
       
       if (data.settings && data.settings.active) {
-        const domainSettings = data.settings.domains.find(d => d.domain === domain && d.enabled);
+        // raw.githubusercontent.comのドメインの場合は特別扱い
+        const checkDomain = domain === 'raw.githubusercontent.com' ? 'github.com' : domain;
+        const domainSettings = data.settings.domains.find(d => d.domain === checkDomain && d.enabled);
         
         if (domainSettings) {
           debugLog('対象ドメイン設定検出:', domainSettings);
           // そのドメインの翻訳が有効であれば、コンテンツスクリプトに通知
           chrome.tabs.sendMessage(tabId, {
             action: 'startTranslation',
-            domain: domain
+            domain: checkDomain
           }, response => {
             if (chrome.runtime.lastError) {
               debugLog('メッセージ送信エラー:', chrome.runtime.lastError);
@@ -123,7 +137,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
               setTimeout(() => {
                 chrome.tabs.sendMessage(tabId, {
                   action: 'startTranslation',
-                  domain: domain
+                  domain: checkDomain
                 });
               }, 1000);
             } else {
@@ -289,8 +303,11 @@ async function fetchTranslationsForDomain(domain) {
   try {
     debugLog('ドメイン用翻訳データ取得開始:', domain);
     
+    // raw.githubusercontent.comのドメインの場合はgithub.comの設定を使用
+    const checkDomain = domain === 'raw.githubusercontent.com' ? 'github.com' : domain;
+    
     // 新しい関数を使用して両方取得し、翻訳データのみを返す
-    const data = await fetchTranslationsAndMappingForDomain(domain);
+    const data = await fetchTranslationsAndMappingForDomain(checkDomain);
     return data.translations;
   } catch (error) {
     console.error('翻訳データ取得エラー:', error);
