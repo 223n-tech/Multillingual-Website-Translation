@@ -1,9 +1,80 @@
 // content-github.js - GitHub特殊処理機能
 // GitHub固有の翻訳処理を提供
 
+// 重要なキーワードを直接翻訳するユーティリティ関数
+function translateDirectKeywords(rootElement) {
+  let translatedCount = 0;
+  const directTranslations = {
+    "Issues": "課題",
+    "Pull requests": "プルリクエスト",
+    "Marketplace": "マーケットプレイス",
+    "Explore": "探索",
+    "Code": "コード",
+    "Actions": "アクション",
+    "Projects": "プロジェクト",
+    "Wiki": "ウィキ",
+    "Security": "セキュリティ",
+    "Insights": "インサイト",
+    "Settings": "設定",
+    "Discussions": "ディスカッション"
+  };
+  
+  // テキストノードとdata-content属性を検索
+  const textWalker = document.createTreeWalker(
+    rootElement, 
+    NodeFilter.SHOW_TEXT, 
+    null, 
+    false
+  );
+  
+  // テキストノードを処理
+  let textNode;
+  while (textNode = textWalker.nextNode()) {
+    const text = textNode.textContent.trim();
+    if (directTranslations[text]) {
+      textNode.textContent = textNode.textContent.replace(
+        text,
+        directTranslations[text]
+      );
+      translatedCount++;
+      debugLog(`直接翻訳: "${text}" -> "${directTranslations[text]}"`);
+    }
+  }
+  
+  // data-content属性を処理
+  const elementsWithDataContent = rootElement.querySelectorAll('[data-content]');
+  elementsWithDataContent.forEach(el => {
+    const content = el.getAttribute('data-content');
+    if (directTranslations[content]) {
+      el.setAttribute('data-content', directTranslations[content]);
+      if (el.textContent.trim() === content) {
+        el.textContent = directTranslations[content];
+      }
+      translatedCount++;
+      debugLog(`直接data-content翻訳: "${content}" -> "${directTranslations[content]}"`);
+    }
+  });
+  
+  // ActionListItem-label クラスの要素を処理
+  const actionListItems = rootElement.querySelectorAll('.ActionListItem-label');
+  actionListItems.forEach(el => {
+    const text = el.textContent.trim();
+    if (directTranslations[text]) {
+      el.textContent = directTranslations[text];
+      translatedCount++;
+      debugLog(`ActionListItem-label翻訳: "${text}" -> "${directTranslations[text]}"`);
+    }
+  });
+  
+  return translatedCount;
+}
+
 // GitHub固有の要素を翻訳
 function processGitHubSpecificElements(rootElement, translationMaps, contextMapping) {
   let translatedCount = 0;
+  
+  // 特定のキーワードを直接翻訳
+  translatedCount += translateDirectKeywords(rootElement);
   
   // 各種特殊要素の処理
   translatedCount += processRepositoryTabs(rootElement, translationMaps, contextMapping);
@@ -11,6 +82,41 @@ function processGitHubSpecificElements(rootElement, translationMaps, contextMapp
   translatedCount += processDataContentElements(rootElement, translationMaps, contextMapping);
   translatedCount += processAchievementsElements(rootElement, translationMaps, contextMapping);
   translatedCount += processProfileElements(rootElement, translationMaps, contextMapping);
+  translatedCount += processActionListItems(rootElement, translationMaps, contextMapping);
+  
+  return translatedCount;
+}
+
+// 新しいUIのActionListItemを処理する関数
+function processActionListItems(rootElement, translationMaps, contextMapping) {
+  let translatedCount = 0;
+  
+  // ActionListItem-labelクラスの要素を処理
+  const actionListItems = rootElement.querySelectorAll('.ActionListItem-label');
+  debugLog(`ActionListItem-label要素: ${actionListItems.length}個検出`);
+  
+  actionListItems.forEach(item => {
+    const text = item.textContent.trim();
+    if (!text) return;
+    
+    // コンテキストを決定（メインナビゲーションをデフォルトとする）
+    let elementContext = "メインナビゲーション";
+    
+    // 適切なコンテキストで翻訳
+    if (translationMaps.byContext[elementContext] && 
+        translationMaps.byContext[elementContext][text]) {
+      item.textContent = translationMaps.byContext[elementContext][text];
+      debugLog(`ActionListItem翻訳（${elementContext}）: "${text}" -> "${translationMaps.byContext[elementContext][text]}"`);
+      translatedCount++;
+    } 
+    // グローバル翻訳を試みる
+    else if (contextMapping.settings.empty_context === "global" && 
+             translationMaps.global[text]) {
+      item.textContent = translationMaps.global[text];
+      debugLog(`ActionListItem翻訳（グローバル）: "${text}" -> "${translationMaps.global[text]}"`);
+      translatedCount++;
+    }
+  });
   
   return translatedCount;
 }
@@ -277,16 +383,34 @@ function processHeaderItems(rootElement, translationMaps, contextMapping) {
 function processDataContentElements(rootElement, translationMaps, contextMapping) {
   let translatedCount = 0;
   
-  // data-content属性を持つ要素を取得
-  const dataContentElements = rootElement.querySelectorAll('[data-content]');
+  // data-content属性を持つ要素を取得（より広範なセレクタで）
+  const dataContentElements = rootElement.querySelectorAll('[data-content], span[data-content]');
   debugLog(`data-content属性を持つ要素: ${dataContentElements.length}個検出`);
   
   dataContentElements.forEach(el => {
     const content = el.getAttribute('data-content');
     if (!content || !content.trim()) return;
     
-    // 要素のコンテキストを判定
-    const elementContext = determineElementContext(el, contextMapping);
+    // デバッグ出力を追加
+    debugLog(`処理中のdata-content: "${content}", 要素:`, el);
+    
+    // "Issues"のような特定のキーワードを直接検出して翻訳
+    if (content === "Issues") {
+      el.setAttribute('data-content', "課題");
+      
+      // テキストコンテンツも一致する場合は翻訳
+      if (el.textContent.trim() === content) {
+        el.textContent = "課題";
+      }
+      
+      debugLog(`data-content "Issues" を直接翻訳: "課題"`);
+      translatedCount++;
+      return;
+    }
+    
+    // 要素のコンテキストを判定（デフォルトを "特殊要素" に設定）
+    const elementContext = determineElementContext(el, contextMapping) || "特殊要素";
+    debugLog(`data-content要素 "${content}" のコンテキスト: ${elementContext || 'なし'}`);
     
     // 1. コンテキスト指定の翻訳を試みる
     if (elementContext && translationMaps.byContext[elementContext] && 
@@ -300,6 +424,34 @@ function processDataContentElements(rootElement, translationMaps, contextMapping
       }
       
       debugLog(`data-content属性翻訳（コンテキスト「${elementContext}」）: "${content}" -> "${translation}"`);
+      translatedCount++;
+    }
+    // メインナビゲーションコンテキストでも翻訳を試みる（Issues対応）
+    else if (translationMaps.byContext["メインナビゲーション"] && 
+             translationMaps.byContext["メインナビゲーション"][content]) {
+      const translation = translationMaps.byContext["メインナビゲーション"][content];
+      el.setAttribute('data-content', translation);
+      
+      // テキストコンテンツも一致する場合は翻訳
+      if (el.textContent.trim() === content) {
+        el.textContent = translation;
+      }
+      
+      debugLog(`data-content属性翻訳（フォールバック「メインナビゲーション」）: "${content}" -> "${translation}"`);
+      translatedCount++;
+    }
+    // リポジトリタブコンテキストでも翻訳を試みる
+    else if (translationMaps.byContext["リポジトリタブ"] && 
+             translationMaps.byContext["リポジトリタブ"][content]) {
+      const translation = translationMaps.byContext["リポジトリタブ"][content];
+      el.setAttribute('data-content', translation);
+      
+      // テキストコンテンツも一致する場合は翻訳
+      if (el.textContent.trim() === content) {
+        el.textContent = translation;
+      }
+      
+      debugLog(`data-content属性翻訳（フォールバック「リポジトリタブ」）: "${content}" -> "${translation}"`);
       translatedCount++;
     }
     // 2. グローバル翻訳を試みる

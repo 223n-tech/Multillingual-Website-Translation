@@ -164,6 +164,9 @@ function startTranslation() {
     
     // 処理済み要素をリセット
     processedElements = new WeakSet();
+
+    // 特定のキーワードを直接翻訳
+    translatedCount += translateDirectKeywords(document.body);
     
     // コンテキストマッピングに基づいて翻訳を適用
     translatedCount += applyTranslationsWithContextMapping(document.body, translationMaps, contextMapping);
@@ -204,6 +207,66 @@ function resetTranslations() {
   debugLog('ページ再読み込み実行');
   // ここでは簡単化のためページの再読み込みを行う
   window.location.reload();
+}
+
+// 重要なキーワードを直接翻訳するユーティリティ関数
+function translateDirectKeywords(rootElement) {
+  let translatedCount = 0;
+  const directTranslations = {
+    "Issues": "課題",
+    "Pull requests": "プルリクエスト",
+    "Marketplace": "マーケットプレイス",
+    "Explore": "探索"
+  };
+  
+  // テキストノードとdata-content属性を検索
+  const textWalker = document.createTreeWalker(
+    rootElement, 
+    NodeFilter.SHOW_TEXT, 
+    null, 
+    false
+  );
+  
+  // テキストノードを処理
+  let textNode;
+  while (textNode = textWalker.nextNode()) {
+    const text = textNode.textContent.trim();
+    if (directTranslations[text]) {
+      textNode.textContent = textNode.textContent.replace(
+        text,
+        directTranslations[text]
+      );
+      translatedCount++;
+      debugLog(`直接翻訳: "${text}" -> "${directTranslations[text]}"`);
+    }
+  }
+  
+  // data-content属性を処理
+  const elementsWithDataContent = rootElement.querySelectorAll('[data-content]');
+  elementsWithDataContent.forEach(el => {
+    const content = el.getAttribute('data-content');
+    if (directTranslations[content]) {
+      el.setAttribute('data-content', directTranslations[content]);
+      if (el.textContent.trim() === content) {
+        el.textContent = directTranslations[content];
+      }
+      translatedCount++;
+      debugLog(`直接data-content翻訳: "${content}" -> "${directTranslations[content]}"`);
+    }
+  });
+  
+  // ActionListItem-label クラスの要素を処理
+  const actionListItems = rootElement.querySelectorAll('.ActionListItem-label');
+  actionListItems.forEach(el => {
+    const text = el.textContent.trim();
+    if (directTranslations[text]) {
+      el.textContent = directTranslations[text];
+      translatedCount++;
+      debugLog(`ActionListItem-label翻訳: "${text}" -> "${directTranslations[text]}"`);
+    }
+  });
+  
+  return translatedCount;
 }
 
 // 初期化を実行

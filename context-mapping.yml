@@ -23,6 +23,7 @@ contexts:
       - ".header-nav-item"
       - ".HeaderMenu-link"
       - ".header-menu-wrapper a"
+      - ".ActionListItem-label"  # 新しいクラスを追加
     description: "ヘッダー部分のナビゲーションメニュー"
   
   # リポジトリタブ
@@ -71,6 +72,7 @@ contexts:
       - "[role='button']"
       - "summary.btn"
       - ".Button"
+      - ".prc-Button-Label-pTQ3x"
     exclude_selectors:
       - ".btn[data-content]" # data-content属性を持つボタンは除外
     description: "各種ボタン要素"
@@ -79,12 +81,15 @@ contexts:
   "特殊要素":
     selectors:
       - "[data-content]"
+      - "span[data-content]"
       - ".h4.mb-2"
       - "h2.h4"
       - "h2.f4"
       - ".Link--primary"
+      - ".ActionListItem-label"
+      - "[data-view-component=true]"
     description: "特別な処理が必要なUI要素"
-  
+
   # 課題表示
   "課題表示":
     selectors:
@@ -215,3 +220,8 @@ regex_contexts:
       - "pre"
       - "code"
       - ".highlight"
+
+  # フッター
+  "フッター":
+    apply_to:
+      - ".Link--secondary.Link"

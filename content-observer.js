@@ -21,6 +21,9 @@ function setupMutationObserver(translationMaps, contextMapping) {
     try {
       debugLog('DOM変更検出', mutations.length + '個の変更');
       
+      // 特定のキーワードを直接翻訳
+      translatedCount += translateDirectKeywords(document.body);
+      
       // GitHubの特殊要素を処理
       if (currentDomain.includes('github.com')) {
         translatedCount += handleGitHubDynamicChanges(mutations, translationMaps, contextMapping);
@@ -58,13 +61,13 @@ function setupMutationObserver(translationMaps, contextMapping) {
     }
   });
   
-  // Observerを開始（属性変化も監視）
+  // より広範なイベントを監視
   window.translationObserver.observe(document.body, {
     childList: true,
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ['class', 'style', 'aria-label', 'data-content', 'data-view-component']
+    attributeFilter: ['class', 'style', 'aria-label', 'data-content', 'data-view-component', 'title']
   });
   
   debugLog('MutationObserver設定完了');
