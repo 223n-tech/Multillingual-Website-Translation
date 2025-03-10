@@ -9,6 +9,7 @@ import {
   MessageResponseCallback,
 } from '../../types/message-types';
 import { debugLog } from '../../utils/debug';
+
 /**
  * メッセージハンドラー
  * コンテンツスクリプトとのメッセージング通信を管理
@@ -38,7 +39,7 @@ export class MessageHandler {
         break;
 
       case 'getTranslations': // 後方互換性のため
-        this.handleGetTranslations(message.domain, sendResponse);
+        this.handleGetTranslations(message.domain as string, sendResponse);
         break;
 
       case 'toggleTranslation':

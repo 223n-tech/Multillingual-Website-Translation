@@ -1,46 +1,52 @@
 import '../options.css';
 import { uiDebugLog } from '../../utils/debug';
-import { EntryManagerController } from '../controllers/entry-controller';
+import { EntryManagerController } from '../controllers/entry-manager-controller';
 
 /**
  * 翻訳エントリー管理ページのエントリーポイント
  */
-document.addEventListener('DOMContentLoaded', () => {
-  // URL パラメーターを解析
-  const params = new URLSearchParams(window.location.search);
-  const domainId = params.get('domainId');
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    // URL パラメーターを解析
+    const params = new URLSearchParams(window.location.search);
+    const domainIndex = params.get('index');
 
-  if (!domainId) {
-    // ドメインIDがない場合はエラーメッセージを表示
-    document.body.innerHTML = `
-      <div class="container">
-        <div class="card">
-          <h2>エラー</h2>
-          <p>ドメインIDが指定されていません。設定ページから正しく開いてください。</p>
-          <button class="btn primary" onclick="window.location.href='options.html'">設定ページに戻る</button>
-        </div>
-      </div>
-    `;
-    return;
-  }
+    if (!domainIndex) {
+      showErrorMessage(
+        'ドメインインデックスが指定されていません。設定ページから正しく開いてください。',
+      );
+      return;
+    }
 
-  uiDebugLog('エントリー管理ページ初期化', { domainId });
+    const index = parseInt(domainIndex, 10);
+    if (isNaN(index)) {
+      showErrorMessage('無効なドメインインデックスです');
+      return;
+    }
 
-  // エントリーマネージャーコントローラーを初期化
-  const controller = new EntryManagerController(domainId);
-  controller.initialize().catch((error: Error) => {
+    uiDebugLog('エントリー管理ページ初期化', { domainIndex, index });
+
+    // エントリーマネージャーコントローラーを初期化
+    const controller = new EntryManagerController(index);
+    await controller.initialize();
+  } catch (error) {
     console.error('エントリーマネージャーの初期化に失敗:', error);
-
-    // エラー時のUIを表示
-    document.body.innerHTML = `
-      <div class="container">
-        <div class="card">
-          <h2>エラー</h2>
-          <p>エントリー管理ページの初期化に失敗しました：</p>
-          <pre>${error.message}</pre>
-          <button class="btn primary" onclick="window.location.href='options.html'">設定ページに戻る</button>
-        </div>
-      </div>
-    `;
-  });
+    showErrorMessage(error instanceof Error ? error.message : '不明なエラー');
+  }
 });
+
+/**
+ * エラーメッセージを表示
+ */
+function showErrorMessage(message: string): void {
+  document.body.innerHTML = `
+    <div class="container">
+      <div class="card">
+        <h2>エラー</h2>
+        <p>エントリー管理ページの初期化に失敗しました：</p>
+        <pre>${message}</pre>
+        <button class="btn primary" onclick="window.location.href='options.html'">設定ページに戻る</button>
+      </div>
+    </div>
+  `;
+}

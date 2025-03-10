@@ -6,7 +6,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-size: 14px;
   color: #24292e;
   background-color: #f6f8fa;
@@ -132,7 +132,7 @@ h2 {
   color: white;
 }
 
-.action-buttons, 
+.action-buttons,
 .io-buttons {
   display: flex;
   justify-content: flex-start;
@@ -283,8 +283,9 @@ footer {
 }
 
 /* オンとオフのラベル部分の共通スタイル */
-.slider:before, .slider:after {
-  content: "";
+.slider:before,
+.slider:after {
+  content: '';
   position: absolute;
   width: 50%;
   height: 100%;
@@ -301,7 +302,7 @@ footer {
 
 /* オフ状態のボタン部分 */
 .slider:before {
-  content: "無効";
+  content: '無効';
   left: 0;
   background-color: #f6f8fa;
   color: #586069;
@@ -310,7 +311,7 @@ footer {
 
 /* オン状態のボタン部分 */
 .slider:after {
-  content: "有効";
+  content: '有効';
   right: 0;
   background-color: #f6f8fa;
   color: #586069;
@@ -338,7 +339,8 @@ input:checked + .slider:after {
   border-radius: 15px;
 }
 
-.slider.round:before, .slider.round:after {
+.slider.round:before,
+.slider.round:after {
   border-radius: 13px;
 }
 
@@ -440,7 +442,7 @@ input:checked + .slider:after {
   align-items: center;
 }
 
-.checkbox-group input[type="checkbox"] {
+.checkbox-group input[type='checkbox'] {
   margin-right: 8px;
   width: auto;
 }

@@ -1,183 +1,199 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitHub翻訳エクステンション - 設定</title>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>GitHub翻訳エクステンション - 設定</h1>
-    </header>
-    
-    <main>
-      <section class="card">
-        <h2>翻訳設定</h2>
-        <div class="form-group">
-          <label for="translation-active">翻訳機能:</label>
-          <div class="toggle-container">
-            <label class="switch">
-              <input type="checkbox" id="translation-active">
-              <span class="slider round"></span>
-            </label>
-            <span id="active-status">無効</span>
-          </div>
-        </div>
-      </section>
-      
-      <section class="card">
-        <h2>ドメイン設定</h2>
-        <div class="domain-list" id="domain-list">
-          <!-- ここにドメインリストが動的に追加されます -->
-        </div>
-        <div class="action-buttons">
-          <button id="add-domain-btn" class="btn primary">ドメインを追加</button>
-        </div>
-      </section>
-      
-      <section class="card">
-        <h2>設定のインポート・エクスポート</h2>
-        <div class="io-buttons">
-          <button id="export-btn" class="btn secondary">エクスポート</button>
-          <button id="import-btn" class="btn secondary">インポート</button>
-          <input type="file" id="import-file" accept=".yml,.yaml,.json" style="display: none;">
-        </div>
-      </section>
-    </main>
-    
-    <footer>
-      <p>GitHub翻訳エクステンション &copy; 2025</p>
-    </footer>
-  </div>
-  
-  <!-- ドメイン追加/編集モーダル -->
-  <div id="domain-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modal-title">ドメインを追加</h2>
-        <span class="close">&times;</span>
-      </div>
-      <div class="modal-body">
-        <form id="domain-form">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub翻訳エクステンション - 設定</title>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>GitHub翻訳エクステンション - 設定</h1>
+      </header>
+
+      <main>
+        <section class="card">
+          <h2>翻訳設定</h2>
           <div class="form-group">
-            <label for="domain-input">ドメイン:</label>
-            <input type="text" id="domain-input" placeholder="例: github.com" required>
-          </div>
-          <div class="form-group">
-            <label for="name-input">設定名:</label>
-            <input type="text" id="name-input" placeholder="例: GitHub UI 翻訳" required>
-          </div>
-          <div class="form-group">
-            <label for="repository-input">リポジトリURL:</label>
-            <input type="text" id="repository-input" placeholder="例: https://raw.githubusercontent.com/username/translations/main/github-translations.yml" required>
-          </div>
-          <div class="form-group">
-            <label for="context-mapping-input">コンテキストマッピングURL:</label>
-            <input type="text" id="context-mapping-input" placeholder="例: https://raw.githubusercontent.com/username/translations/main/context-mapping.yml">
-          </div>
-          <div class="form-group">
-            <label for="description-input">説明:</label>
-            <textarea id="description-input" placeholder="この設定の説明..."></textarea>
-          </div>
-          <div class="form-group">
-            <label for="domain-enabled">有効:</label>
+            <label for="translation-active">翻訳機能:</label>
             <div class="toggle-container">
               <label class="switch">
-                <input type="checkbox" id="domain-enabled" checked>
+                <input type="checkbox" id="translation-active" />
                 <span class="slider round"></span>
               </label>
+              <span id="active-status">無効</span>
             </div>
           </div>
-          <div class="modal-buttons">
-            <button type="submit" class="btn primary">保存</button>
-            <button type="button" id="cancel-btn" class="btn secondary">キャンセル</button>
+        </section>
+
+        <section class="card">
+          <h2>ドメイン設定</h2>
+          <div class="domain-list" id="domain-list">
+            <!-- ここにドメインリストが動的に追加されます -->
           </div>
-        </form>
-      </div>
+          <div class="action-buttons">
+            <button id="add-domain-btn" class="btn primary">ドメインを追加</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>設定のインポート・エクスポート</h2>
+          <div class="io-buttons">
+            <button id="export-btn" class="btn secondary">エクスポート</button>
+            <button id="import-btn" class="btn secondary">インポート</button>
+            <input type="file" id="import-file" accept=".yml,.yaml,.json" style="display: none" />
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <p>GitHub翻訳エクステンション &copy; 2025</p>
+      </footer>
     </div>
-  </div>
-  
-  <!-- 翻訳エントリー編集モーダル -->
-  <div id="entry-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="entry-modal-title">翻訳エントリー管理</h2>
-        <span class="close" id="entry-modal-close">&times;</span>
-      </div>
-      <div class="modal-body">
-        <div class="entry-list-actions">
-          <button id="add-entry-btn" class="btn primary">エントリー追加</button>
-          <button id="test-regex-btn" class="btn secondary">正規表現テスト</button>
+
+    <!-- ドメイン追加/編集モーダル -->
+    <div id="domain-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-title">ドメインを追加</h2>
+          <span class="close">&times;</span>
         </div>
-        
-        <div class="entry-list-container">
-          <div id="entry-list" class="entry-list">
-            <!-- ここに翻訳エントリーがリストされます -->
-          </div>
-        </div>
-        
-        <!-- 追加/編集フォーム -->
-        <div id="entry-edit-form" class="entry-edit-form" style="display: none;">
-          <h3 id="entry-form-title">翻訳エントリーの追加</h3>
-          <form id="translation-entry-form">
+        <div class="modal-body">
+          <form id="domain-form">
             <div class="form-group">
-              <label for="entry-original">元のテキスト:</label>
-              <input type="text" id="entry-original" required>
+              <label for="domain-input">ドメイン:</label>
+              <input type="text" id="domain-input" placeholder="例: github.com" required />
             </div>
             <div class="form-group">
-              <label for="entry-translated">翻訳後テキスト:</label>
-              <input type="text" id="entry-translated" required>
+              <label for="name-input">設定名:</label>
+              <input type="text" id="name-input" placeholder="例: GitHub UI 翻訳" required />
             </div>
             <div class="form-group">
-              <label for="entry-context">コンテキスト:</label>
-              <input type="text" id="entry-context" placeholder="例: メインナビゲーション">
+              <label for="repository-input">リポジトリURL:</label>
+              <input
+                type="text"
+                id="repository-input"
+                placeholder="例: https://raw.githubusercontent.com/username/translations/main/github-translations.yml"
+                required
+              />
             </div>
-            <div class="form-group checkbox-group">
-              <label for="entry-regex">正規表現を使用:</label>
-              <input type="checkbox" id="entry-regex">
-              <span class="help-text">正規表現を使うと、パターンマッチングが可能になります。$&や$1などの置換グループも使えます。</span>
+            <div class="form-group">
+              <label for="context-mapping-input">コンテキストマッピングURL:</label>
+              <input
+                type="text"
+                id="context-mapping-input"
+                placeholder="例: https://raw.githubusercontent.com/username/translations/main/context-mapping.yml"
+              />
             </div>
-            <div class="form-actions">
+            <div class="form-group">
+              <label for="description-input">説明:</label>
+              <textarea id="description-input" placeholder="この設定の説明..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="domain-enabled">有効:</label>
+              <div class="toggle-container">
+                <label class="switch">
+                  <input type="checkbox" id="domain-enabled" checked />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+            <div class="modal-buttons">
               <button type="submit" class="btn primary">保存</button>
-              <button type="button" id="entry-cancel-btn" class="btn secondary">キャンセル</button>
+              <button type="button" id="cancel-btn" class="btn secondary">キャンセル</button>
             </div>
           </form>
         </div>
-        
-        <!-- 正規表現テストツール -->
-        <div id="regex-test-tool" class="regex-test-tool" style="display: none;">
-          <h3>正規表現テスト</h3>
-          <div class="form-group">
-            <label for="regex-pattern">正規表現パターン:</label>
-            <input type="text" id="regex-pattern" placeholder="例: Issue #\d+">
+      </div>
+    </div>
+
+    <!-- 翻訳エントリー編集モーダル -->
+    <div id="entry-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="entry-modal-title">翻訳エントリー管理</h2>
+          <span class="close" id="entry-modal-close">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="entry-list-actions">
+            <button id="add-entry-btn" class="btn primary">エントリー追加</button>
+            <button id="test-regex-btn" class="btn secondary">正規表現テスト</button>
           </div>
-          <div class="form-group">
-            <label for="regex-replacement">置換テキスト:</label>
-            <input type="text" id="regex-replacement" placeholder="例: 課題 #$&">
-          </div>
-          <div class="form-group">
-            <label for="regex-test-input">テスト文字列:</label>
-            <textarea id="regex-test-input" placeholder="ここにテストしたいテキストを入力"></textarea>
-          </div>
-          <div class="form-actions">
-            <button id="run-regex-test" class="btn primary">テスト実行</button>
-            <button id="regex-test-cancel" class="btn secondary">キャンセル</button>
-          </div>
-          <div class="test-result">
-            <h4>結果:</h4>
-            <div id="regex-test-result" class="result-display">
-              <!-- テスト結果がここに表示されます -->
+
+          <div class="entry-list-container">
+            <div id="entry-list" class="entry-list">
+              <!-- ここに翻訳エントリーがリストされます -->
             </div>
           </div>
-        </div>
-        
-        <div class="modal-buttons entry-modal-buttons">
-          <button id="save-entries-btn" class="btn primary">すべて保存</button>
-          <button id="close-entry-modal-btn" class="btn secondary">閉じる</button>
+
+          <!-- 追加/編集フォーム -->
+          <div id="entry-edit-form" class="entry-edit-form" style="display: none">
+            <h3 id="entry-form-title">翻訳エントリーの追加</h3>
+            <form id="translation-entry-form">
+              <div class="form-group">
+                <label for="entry-original">元のテキスト:</label>
+                <input type="text" id="entry-original" required />
+              </div>
+              <div class="form-group">
+                <label for="entry-translated">翻訳後テキスト:</label>
+                <input type="text" id="entry-translated" required />
+              </div>
+              <div class="form-group">
+                <label for="entry-context">コンテキスト:</label>
+                <input type="text" id="entry-context" placeholder="例: メインナビゲーション" />
+              </div>
+              <div class="form-group checkbox-group">
+                <label for="entry-regex">正規表現を使用:</label>
+                <input type="checkbox" id="entry-regex" />
+                <span class="help-text"
+                  >正規表現を使うと、パターンマッチングが可能になります。$&や$1などの置換グループも使えます。</span
+                >
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn primary">保存</button>
+                <button type="button" id="entry-cancel-btn" class="btn secondary">
+                  キャンセル
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- 正規表現テストツール -->
+          <div id="regex-test-tool" class="regex-test-tool" style="display: none">
+            <h3>正規表現テスト</h3>
+            <div class="form-group">
+              <label for="regex-pattern">正規表現パターン:</label>
+              <input type="text" id="regex-pattern" placeholder="例: Issue #\d+" />
+            </div>
+            <div class="form-group">
+              <label for="regex-replacement">置換テキスト:</label>
+              <input type="text" id="regex-replacement" placeholder="例: 課題 #$&" />
+            </div>
+            <div class="form-group">
+              <label for="regex-test-input">テスト文字列:</label>
+              <textarea
+                id="regex-test-input"
+                placeholder="ここにテストしたいテキストを入力"
+              ></textarea>
+            </div>
+            <div class="form-actions">
+              <button id="run-regex-test" class="btn primary">テスト実行</button>
+              <button id="regex-test-cancel" class="btn secondary">キャンセル</button>
+            </div>
+            <div class="test-result">
+              <h4>結果:</h4>
+              <div id="regex-test-result" class="result-display">
+                <!-- テスト結果がここに表示されます -->
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-buttons entry-modal-buttons">
+            <button id="save-entries-btn" class="btn primary">すべて保存</button>
+            <button id="close-entry-modal-btn" class="btn secondary">閉じる</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>

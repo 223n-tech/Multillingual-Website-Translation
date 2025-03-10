@@ -2,19 +2,19 @@
   "manifest_version": 3,
   "name": "GitHub Translator",
   "description": "GitHub UIの翻訳を行うChrome拡張機能",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "assets/icons/icon16.png",
       "48": "assets/icons/icon48.png",
-      "128": "assets/icons/icon128.png"
+      "128": "assets/icons/icon128.png",
+      "250": "assets/icons/icon250.png"
     }
   },
   "icons": {
-    "16": "assets/icons/icon16.png",
     "48": "assets/icons/icon48.png",
-    "128": "assets/icons/icon128.png"
+    "128": "assets/icons/icon128.png",
+    "250": "assets/icons/icon250.png"
   },
   "background": {
     "service_worker": "background.js",
@@ -28,13 +28,6 @@
     }
   ],
   "options_page": "options.html",
-  "permissions": [
-    "storage",
-    "activeTab",
-    "scripting",
-    "tabs"
-  ],
-  "host_permissions": [
-    "*://*/*"
-  ]
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": ["*://*/*"]
 }

@@ -143,12 +143,21 @@ export class TranslationEngine {
       const element = rootNode as Element;
       const tagName = element.tagName.toUpperCase();
 
-      if (this.SKIP_TAGS.includes(tagName) || element.isContentEditable) {
+      if (this.SKIP_TAGS.includes(tagName)) {
+        return 0;
+      }
+
+      // HTMLElementの場合のみisContentEditableをチェック
+      if (element instanceof HTMLElement && element.isContentEditable) {
         return 0;
       }
 
       // データ属性でスキップフラグがある場合はスキップ
-      if (element.dataset && element.dataset.noTranslate === 'true') {
+      if (
+        element instanceof HTMLElement &&
+        element.dataset &&
+        element.dataset.noTranslate === 'true'
+      ) {
         return 0;
       }
 

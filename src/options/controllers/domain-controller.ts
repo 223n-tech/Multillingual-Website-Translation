@@ -271,7 +271,7 @@ export class DomainController {
     const domain = settings.domains[index];
 
     chrome.tabs.create({
-      url: `entry-manager.html?domain=${encodeURIComponent(domain.domain)}&index=${index}`,
+      url: `entry-manager.html?index=${index}`,
     });
   }
 }

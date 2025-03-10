@@ -58,10 +58,11 @@ class BackgroundService {
 // バックグラウンドサービスを初期化
 const _backgroundService = new BackgroundService();
 
-// Service Workerのコンテキストで self を型付け
-declare const self: ServiceWorkerGlobalScope;
-
-// Service Worker のイベントハンドラ（必要に応じて）
-self.addEventListener('activate', (_event) => {
-  debugLog('Service Worker アクティブ化');
-});
+// Chromeの拡張機能はServiceWorker環境で動作するため、
+// ServiceWorkerGlobalScopeの代わりにWindowのTypeを使用
+if (typeof self !== 'undefined') {
+  // 'activate'イベントリスナーを追加
+  self.addEventListener('activate', (event) => {
+    debugLog('Service Worker アクティブ化', event);
+  });
+}
