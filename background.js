@@ -22,6 +22,7 @@ chrome.runtime.onInstalled.addListener(async () => {
         domain: "github.com",
         name: "GitHub UI 翻訳",
         repository: "https://raw.githubusercontent.com/223n-tech/github-translation/refs/heads/master/translation-config-github.yml",
+        contextMapping: "https://raw.githubusercontent.com/223n-tech/github-translation/refs/heads/master/context-mapping.yml",
         enabled: true,
         description: "GitHub UI の日本語翻訳"
       }
@@ -36,18 +37,42 @@ chrome.runtime.onInstalled.addListener(async () => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   debugLog('メッセージ受信:', message, 'from:', sender.tab ? sender.tab.url : 'ポップアップ');
   
+  // 後方互換性のための処理
   if (message.action === 'getTranslations') {
     // ドメインに基づいて翻訳データを取得
-    debugLog('翻訳データ取得リクエスト:', message.domain);
+    debugLog('翻訳データ取得リクエスト (旧形式):', message.domain);
     
     fetchTranslationsForDomain(message.domain)
       .then(translations => {
-        debugLog('翻訳データ取得成功');
+        debugLog('翻訳データ取得成功 (旧形式)');
         sendResponse({ success: true, translations });
       })
       .catch(error => {
         console.error('翻訳データの取得に失敗しました:', error);
         debugLog('翻訳データ取得失敗:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    
+    return true; // 非同期レスポンスのため true を返す
+  }
+  
+  // 新形式: 翻訳データとコンテキストマッピングの両方を取得
+  if (message.action === 'getTranslationsAndMapping') {
+    // ドメインに基づいて翻訳データとコンテキストマッピングを取得
+    debugLog('翻訳データとマッピング取得リクエスト:', message.domain);
+    
+    fetchTranslationsAndMappingForDomain(message.domain)
+      .then(data => {
+        debugLog('翻訳データとマッピング取得成功');
+        sendResponse({ 
+          success: true, 
+          translations: data.translations,
+          contextMapping: data.contextMapping
+        });
+      })
+      .catch(error => {
+        console.error('翻訳データとマッピングの取得に失敗しました:', error);
+        debugLog('取得失敗:', error);
         sendResponse({ success: false, error: error.message });
       });
     
@@ -115,10 +140,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-// 指定されたドメインの翻訳データをGitHubリポジトリから取得
-async function fetchTranslationsForDomain(domain) {
+// 指定されたドメインの翻訳データとコンテキストマッピングを取得
+async function fetchTranslationsAndMappingForDomain(domain) {
   try {
-    debugLog('ドメイン用翻訳データ取得開始:', domain);
+    debugLog('翻訳データとマッピング取得開始:', domain);
     
     // ドメイン設定を取得
     const { settings } = await chrome.storage.local.get('settings');
@@ -138,7 +163,9 @@ async function fetchTranslationsForDomain(domain) {
     if (domainSetting.repository.includes('username/translations') || 
         !domainSetting.repository.startsWith('http')) {
       debugLog('開発用サンプルYAMLを使用');
-      return `
+      
+      // サンプル翻訳データ
+      const sampleTranslations = `
 # GitHub翻訳設定ファイル
 site: "github.com"
 language: "日本語"
@@ -175,22 +202,96 @@ translations:
     translated: "プルリクエスト"
     context: "リポジトリタブ"
       `;
+      
+      // サンプルコンテキストマッピング
+      const sampleContextMapping = `
+# コンテキストマッピング設定ファイル
+settings:
+  unknown_context: "ignore"
+  empty_context: "global"
+
+# コンテキストマッピング定義
+contexts:
+  "メインナビゲーション":
+    selectors:
+      - ".AppHeader-globalBar a"
+      - ".header-nav-item"
+      - ".HeaderMenu-link"
+    description: "ヘッダー部分のナビゲーションメニュー"
+  
+  "リポジトリタブ":
+    selectors:
+      - ".UnderlineNav-item"
+      - ".js-selected-navigation-item"
+      - ".reponav-item"
+    description: "リポジトリページのタブメニュー"
+      `;
+      
+      return {
+        translations: sampleTranslations,
+        contextMapping: sampleContextMapping
+      };
     }
     
-    // GitHubリポジトリから翻訳ファイルを取得
+    // 翻訳データとコンテキストマッピングを並行して取得
     debugLog('GitHubからの翻訳ファイル取得開始:', domainSetting.repository);
-    const response = await fetch(domainSetting.repository);
     
-    if (!response.ok) {
-      const errorMsg = `翻訳ファイルの取得に失敗しました: ${response.status} ${response.statusText}`;
-      debugLog(errorMsg);
-      throw new Error(errorMsg);
+    const translationsPromise = fetch(domainSetting.repository)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`翻訳ファイルの取得に失敗しました: ${response.status} ${response.statusText}`);
+        }
+        return response.text();
+      });
+    
+    // コンテキストマッピングURLが指定されている場合は取得、なければnull
+    const contextMappingPromise = domainSetting.contextMapping ? 
+      fetch(domainSetting.contextMapping)
+        .then(response => {
+          if (!response.ok) {
+            debugLog(`コンテキストマッピングの取得に失敗しました (無視): ${response.status} ${response.statusText}`);
+            return null;
+          }
+          return response.text();
+        })
+        .catch(error => {
+          debugLog('コンテキストマッピングの取得中にエラー (無視):', error);
+          return null;
+        })
+      : Promise.resolve(null);
+    
+    // 両方のデータを取得して結果を返す
+    const [translations, contextMapping] = await Promise.all([
+      translationsPromise,
+      contextMappingPromise
+    ]);
+    
+    debugLog('翻訳ファイル取得成功:', translations.substring(0, 100) + '...');
+    if (contextMapping) {
+      debugLog('コンテキストマッピング取得成功:', contextMapping.substring(0, 100) + '...');
+    } else {
+      debugLog('コンテキストマッピングなし、デフォルト設定を使用');
     }
     
-    const yamlText = await response.text();
-    debugLog('翻訳ファイル取得成功:', yamlText.substring(0, 100) + '...');
+    return {
+      translations,
+      contextMapping
+    };
+  } catch (error) {
+    console.error('翻訳データとマッピングの取得エラー:', error);
+    debugLog('取得エラー:', error);
+    throw error;
+  }
+}
+
+// 後方互換性のために残す: 翻訳データのみを取得
+async function fetchTranslationsForDomain(domain) {
+  try {
+    debugLog('ドメイン用翻訳データ取得開始:', domain);
     
-    return yamlText;
+    // 新しい関数を使用して両方取得し、翻訳データのみを返す
+    const data = await fetchTranslationsAndMappingForDomain(domain);
+    return data.translations;
   } catch (error) {
     console.error('翻訳データ取得エラー:', error);
     debugLog('翻訳データ取得エラー:', error);

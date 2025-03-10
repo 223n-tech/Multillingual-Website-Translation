@@ -1,5 +1,5 @@
-// content.js - メインコンテンツスクリプト
-// 分割ファイルを参照してまとめる
+// content-core.js - コア機能
+// コンテキスト対応翻訳システムのコア機能を提供
 
 // デバッグフラグ
 const DEBUG = true;
@@ -11,7 +11,7 @@ function debugLog(...args) {
   }
 }
 
-// 翻訳データとコンテキスト関連の変数
+// 翻訳データとコンテキストマッピング
 let translations = null;
 let contextMapping = null;
 let currentDomain = null;
@@ -93,97 +93,14 @@ async function loadTranslationsAndMapping() {
             debugLog('YAML解析失敗', yamlError);
           }
         } else {
-          // 後方互換性のために旧メッセージタイプもサポート
-          chrome.runtime.sendMessage(
-            { action: 'getTranslations', domain: currentDomain },
-            legacyResponse => {
-              if (legacyResponse && legacyResponse.success && legacyResponse.translations) {
-                try {
-                  // YAMLをパース
-                  debugLog('YAML解析開始 (旧形式翻訳データ)');
-                  translations = jsyaml.load(legacyResponse.translations);
-                  debugLog('YAML解析完了 (旧形式翻訳データ)', translations);
-                  
-                  // デフォルトのコンテキストマッピングを使用
-                  contextMapping = createDefaultContextMapping();
-                  
-                  // 翻訳を実行
-                  startTranslation();
-                } catch (yamlError) {
-                  console.error('YAMLパース失敗:', yamlError);
-                  debugLog('YAML解析失敗', yamlError);
-                }
-              } else {
-                console.error('翻訳データの取得に失敗しました', legacyResponse ? legacyResponse.error : 'レスポンスなし');
-                debugLog('翻訳データ取得失敗', legacyResponse);
-              }
-            }
-          );
+          console.error('翻訳データの取得に失敗しました', response ? response.error : 'レスポンスなし');
+          debugLog('翻訳データ取得失敗', response);
         }
       }
     );
   } catch (error) {
     console.error('翻訳データの読み込みに失敗しました:', error);
     debugLog('翻訳データ読み込み例外', error);
-  }
-}
-
-// 翻訳の実行
-function startTranslation() {
-  if (!translations || !translations.translations) {
-    debugLog('翻訳データが正しくロードされていないため、翻訳をスキップします', translations);
-    return;
-  }
-  
-  if (!contextMapping) {
-    debugLog('コンテキストマッピングが正しくロードされていないため、翻訳をスキップします', contextMapping);
-    return;
-  }
-  
-  if (isTranslating) {
-    debugLog('すでに翻訳処理中のため、スキップします');
-    return;
-  }
-  
-  debugLog('翻訳開始', translations.translations.length + '個のエントリ');
-  isTranslating = true;
-  
-  try {
-    // 翻訳対象カウンター
-    let translatedCount = 0;
-    
-    // ページ内のテキストノードをすべて検索して翻訳
-    const startTime = performance.now();
-    
-    // コンテキストごとに分類した翻訳マップを作成
-    const translationMaps = createContextTranslationMaps(translations.translations);
-    debugLog('翻訳マップ作成完了', Object.keys(translationMaps.byContext).length + '個のコンテキスト');
-    
-    // 正規表現パターン用の翻訳マップ
-    debugLog('正規表現パターン数', translationMaps.regexPatterns.length + '個');
-    
-    // 処理済み要素をリセット
-    processedElements = new WeakSet();
-    
-    // コンテキストマッピングに基づいて翻訳を適用
-    translatedCount += applyTranslationsWithContextMapping(document.body, translationMaps, contextMapping);
-    
-    // GitHub固有の特殊要素を処理
-    if (currentDomain.includes('github.com')) {
-      translatedCount += processGitHubSpecificElements(document.body, translationMaps, contextMapping);
-    }
-    
-    const endTime = performance.now();
-    
-    // MutationObserverを設定してDOMの変更を監視
-    setupMutationObserver(translationMaps, contextMapping);
-    
-    debugLog(`翻訳完了: ${translatedCount}個の翻訳を適用 (${(endTime - startTime).toFixed(2)}ms)`);
-  } catch (error) {
-    console.error('翻訳実行エラー:', error);
-    debugLog('翻訳実行例外', error);
-  } finally {
-    isTranslating = false;
   }
 }
 
@@ -208,9 +125,3 @@ function resetTranslations() {
 
 // 初期化を実行
 debugLog('コンテンツスクリプト読み込み完了、初期化開始');
-// DOMContentLoadedイベントが既に発生している場合のフォールバック
-if (document.readyState === 'interactive' || document.readyState === 'complete') {
-  initialize();
-} else {
-  document.addEventListener('DOMContentLoaded', initialize);
-}

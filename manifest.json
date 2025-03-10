@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GitHub翻訳エクステンション",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "GitHubリポジトリに保存された翻訳データを使用してウェブページを翻訳します",
   "permissions": [
     "storage",
@@ -33,7 +33,14 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["lib/js-yaml.min.js", "content.js"],
+      "js": [
+        "lib/js-yaml.min.js",
+        "content-context.js",
+        "content-translation.js",
+        "content-github.js",
+        "content-observer.js",
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -41,7 +48,7 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png",
     "250": "icons/icon250.png"
-},
+  },
   "web_accessible_resources": [
     {
       "resources": ["lib/*"],

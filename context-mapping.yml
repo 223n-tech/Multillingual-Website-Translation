@@ -1,0 +1,217 @@
+# context-mapping.yml
+# コンテキストマッピング設定ファイル
+# このファイルではコンテキストごとにどのHTML要素に適用するかを定義します
+
+# 基本設定
+settings:
+  # 未知のコンテキストの処理方法
+  # "ignore": 未知のコンテキストは翻訳しない
+  # "apply": 未知のコンテキストは全ての要素に適用する
+  unknown_context: "ignore"
+  
+  # コンテキストなし（空文字列）の処理方法
+  # "global": すべての要素に適用する（グローバル翻訳）
+  # "ignore": コンテキストなしは翻訳しない
+  empty_context: "global"
+
+# コンテキストマッピング定義
+contexts:
+  # メインナビゲーション
+  "メインナビゲーション":
+    selectors:
+      - ".AppHeader-globalBar a"
+      - ".header-nav-item"
+      - ".HeaderMenu-link"
+      - ".header-menu-wrapper a"
+    description: "ヘッダー部分のナビゲーションメニュー"
+  
+  # リポジトリタブ
+  "リポジトリタブ":
+    selectors:
+      - ".UnderlineNav-item"
+      - ".js-selected-navigation-item"
+      - ".reponav-item"
+      - ".pagehead-tabs-item"
+      - "[data-tab-item]"
+    description: "リポジトリページのタブメニュー"
+  
+  # アクションタブ
+  "アクションタブ":
+    selectors:
+      - ".tabnav-tab[href*='/actions']"
+      - ".js-selected-navigation-item[href*='/actions']"
+      - ".subnav-item[href*='/actions']"
+    parent_context: "リポジトリタブ"
+    description: "アクションページのタブメニュー"
+  
+  # プロジェクトタブ
+  "プロジェクトタブ":
+    selectors:
+      - ".tabnav-tab[href*='/projects']"
+      - ".js-selected-navigation-item[href*='/projects']"
+      - ".subnav-item[href*='/projects']"
+    parent_context: "リポジトリタブ"
+    description: "プロジェクトページのタブメニュー"
+  
+  # プロフィール
+  "プロフィール":
+    selectors:
+      - ".js-profile-editable-area"
+      - ".user-profile-nav"
+      - ".UnderlineNav-item[href*='/tab/']"
+      - ".js-user-profile-sticky-bar"
+      - ".profile-rollup-wrapper"
+    description: "ユーザープロフィールページの要素"
+  
+  # ボタン
+  "ボタン":
+    selectors:
+      - "button"
+      - ".btn"
+      - "[role='button']"
+      - "summary.btn"
+      - ".Button"
+    exclude_selectors:
+      - ".btn[data-content]" # data-content属性を持つボタンは除外
+    description: "各種ボタン要素"
+  
+  # 特殊要素
+  "特殊要素":
+    selectors:
+      - "[data-content]"
+      - ".h4.mb-2"
+      - "h2.h4"
+      - "h2.f4"
+      - ".Link--primary"
+    description: "特別な処理が必要なUI要素"
+  
+  # 課題表示
+  "課題表示":
+    selectors:
+      - ".issues-listing"
+      - ".js-issue-row"
+      - ".js-navigation-container[aria-label='Issues']"
+      - ".gh-header-meta"
+      - ".js-comment-container"
+    description: "Issue関連の表示"
+  
+  # ラベル
+  "ラベル":
+    selectors:
+      - ".labels"
+      - ".IssueLabel"
+      - ".label-select-menu-item"
+      - ".labels-list-item"
+    parent_context: "課題表示"
+    description: "ラベル表示テキスト"
+  
+  # 検索条件
+  "検索条件":
+    selectors:
+      - ".filter-item"
+      - ".SelectMenu-item[data-filter-value]"
+      - ".select-menu-item[data-filter-value]"
+      - ".SelectMenu-title"
+      - ".select-menu-title"
+    description: "検索フィルター関連"
+  
+  # コード
+  "コード":
+    selectors:
+      - ".repository-content"
+      - ".file-navigation"
+      - ".Box-header"
+      - ".commit-tease"
+      - ".Box-row"
+      - ".k0kWgo"
+      - "h2.prc-Heading-Heading-6CmGO"
+    exclude_selectors:
+      - "pre"
+      - "code"
+      - ".highlight"
+      - ".blob-code"
+      - ".js-file-line"
+    description: "コードビュー関連（コード自体は翻訳しない）"
+  
+  # コミット数
+  "コミット数":
+    selectors:
+      - ".commits"
+      - ".commit-tease-contributors"
+      - ".num.text-emphasized"
+    parent_context: "コード"
+    description: "コミット数表示"
+  
+  # ファイルメニュー
+  "ファイルメニュー":
+    selectors:
+      - ".BtnGroup-item"
+      - ".dropdown-menu-content"
+      - ".file-actions"
+    parent_context: "コード"
+    description: "ファイル操作メニュー"
+  
+  # 日時表示
+  "日時表示":
+    selectors:
+      - "relative-time"
+      - ".timestamp"
+      - "time-ago"
+      - "time"
+    description: "日付や時間の表示形式"
+  
+  # 文字列
+  "文字列":
+    selectors:
+      - ".blankslate"
+      - ".Box-header-title"
+      - ".text-gray"
+      - ".text-emphasized"
+    description: "一般的なテキスト"
+
+# 正規表現パターン用のコンテキスト
+regex_contexts:
+  # 課題表示のパターン
+  "課題表示":
+    apply_to:
+      - ".js-issue-title"
+      - ".js-issue-row"
+      - ".issue-link"
+      - ".gh-header-title"
+  
+  # 課題リファレンス
+  "課題リファレンス":
+    apply_to:
+      - ".comment-body"
+      - ".markdown-body"
+      - ".timeline-comment-body"
+      - ".commit-message"
+    exclude:
+      - "pre"
+      - "code"
+  
+  # プロフィールページ
+  "プロフィールページ":
+    apply_to:
+      - ".js-profile-editable-area"
+      - ".js-user-profile-bio"
+      - ".contribution-activity-listing"
+  
+  # プルリクエスト
+  "プルリクエスト":
+    apply_to:
+      - ".subnav-item"
+      - ".tabnav-tab"
+      - ".blankslate"
+      - ".Box-header-title"
+  
+  # コード
+  "コード":
+    apply_to:
+      - ".repository-meta"
+      - ".repo-stats"
+      - ".file-navigation"
+    exclude:
+      - "pre"
+      - "code"
+      - ".highlight"
