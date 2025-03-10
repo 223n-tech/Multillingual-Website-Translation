@@ -1,5 +1,5 @@
 import { uiDebugLog } from '../../utils/debug';
-import { AppSettings, _DomainSettings, DEFAULT_SETTINGS } from '../../types/settings';
+import { AppSettings, DomainSettings, DEFAULT_SETTINGS } from '../../types/settings';
 import { DomainController } from './domain-controller';
 import { ImportExportController } from './import-export-controller';
 

@@ -5,8 +5,7 @@ import { ContextMappingData, DEFAULT_CONTEXT_MAPPING } from '../../types/context
 import { DomObserver } from './dom-observer';
 import { TranslationData, TranslationMaps, RegexPattern } from '../../types/translation';
 import { TranslationEngine } from './translation-engine';
-// 未使用のインポートを削除または変数名に_をつける
-import { _TranslationsResponse } from '../../types/message-types';
+import { TranslationsResponse } from '../../types/message-types';
 
 /**
  * 翻訳エントリーの型定義
