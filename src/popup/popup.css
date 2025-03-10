@@ -1,0 +1,238 @@
+/* ポップアップのスタイル */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: #24292e;
+  width: 320px;
+  overflow-x: hidden;
+}
+
+.container {
+  padding: 16px;
+}
+
+header {
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e1e4e8;
+  padding-bottom: 8px;
+}
+
+h1 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.status-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+}
+
+.status-text {
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.status-text.active {
+  color: #28a745;
+}
+
+.status-text.inactive {
+  color: #d73a49;
+}
+
+.domain-section {
+  margin-bottom: 16px;
+}
+
+.domain-info {
+  padding: 8px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  background-color: #28a745;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.badge.hidden {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn.primary {
+  background-color: #2ea44f;
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #22863a;
+}
+
+.btn.secondary {
+  background-color: #fafbfc;
+  border: 1px solid #e1e4e8;
+  color: #24292e;
+}
+
+.btn.secondary:hover {
+  background-color: #f3f4f6;
+}
+
+footer {
+  margin-top: 16px;
+  border-top: 1px solid #e1e4e8;
+  padding-top: 12px;
+  text-align: center;
+}
+
+a {
+  color: #0366d6;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* 電灯スイッチ風のトグル */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 70px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 15px;
+  background: #e1e4e8;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* チェックボックスを非表示 */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  position: absolute;
+}
+
+/* 電灯スイッチのスライダー */
+.slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+/* オンとオフのラベル部分の共通スタイル */
+.slider:before, .slider:after {
+  content: "";
+  position: absolute;
+  width: 50%;
+  height: 100%;
+  top: 0;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* オフ状態のボタン部分 */
+.slider:before {
+  content: "無効";
+  left: 0;
+  background-color: #f6f8fa;
+  color: #586069;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* オン状態のボタン部分 */
+.slider:after {
+  content: "有効";
+  right: 0;
+  background-color: #f6f8fa;
+  color: #586069;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* チェックされていない状態では無効ボタンが沈む */
+input:not(:checked) + .slider:before {
+  transform: translateY(2px);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
+  background-color: #e1e4e8;
+  color: #24292e;
+}
+
+/* チェックされた状態では有効ボタンが沈む */
+input:checked + .slider:after {
+  transform: translateY(2px);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
+  background-color: #2ea44f;
+  color: white;
+}
+
+/* 丸いスイッチのスタイル */
+.slider.round {
+  border-radius: 15px;
+}
+
+.slider.round:before, .slider.round:after {
+  border-radius: 13px;
+}

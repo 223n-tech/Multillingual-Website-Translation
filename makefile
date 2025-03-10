@@ -1,44 +1,63 @@
-# GitHub翻訳エクステンション ビルド用Makefile
+# GitHub翻訳エクステンション TypeScript版 ビルド用Makefile
 
 # 設定変数
 EXTENSION_NAME = github-translation-extension
-VERSION := $(shell grep '"version"' manifest.json | sed -E 's/.*"version": "([^"]+)".*/\1/')
-BUILD_DIR = ./build
+VERSION := $(shell grep '"version"' src/manifest.json | sed -E 's/.*"version": "([^"]+)".*/\1/')
 DIST_DIR = ./dist
-ZIP_FILE = $(DIST_DIR)/$(EXTENSION_NAME)-$(VERSION).zip
+BUILD_DIR = ./build
+ZIP_FILE = $(BUILD_DIR)/$(EXTENSION_NAME)-$(VERSION).zip
 BETA_BUILD_DIR = ./build-beta
-BETA_ZIP_FILE = $(DIST_DIR)/$(EXTENSION_NAME)-$(VERSION)-BETA.zip
-
-# 含めるファイルとディレクトリ
-INCLUDE_FILES = manifest.json background.js content.js popup options lib config icons LICENSE README.md
+BETA_ZIP_FILE = $(BUILD_DIR)/$(EXTENSION_NAME)-$(VERSION)-BETA.zip
 
 # デフォルトターゲット
 .PHONY: all
 all: clean build package
 
-# ビルドディレクトリの作成
+# TypeScript用ビルドプロセス (webpackを使用)
 .PHONY: build
 build:
-	@echo "ビルドを開始します..."
+	@echo "TypeScriptビルドを開始します..."
+	@npm run build
 	@mkdir -p $(BUILD_DIR)
-	@mkdir -p $(DIST_DIR)
-	@cp manifest.json $(BUILD_DIR)/
-	@cp background.js $(BUILD_DIR)/
-	@cp content.js $(BUILD_DIR)/
-	@cp -r popup $(BUILD_DIR)/
-	@cp -r options $(BUILD_DIR)/
-	@cp -r lib $(BUILD_DIR)/
-	@cp -r config $(BUILD_DIR)/
-	@cp -r icons $(BUILD_DIR)/
+	@cp -r $(DIST_DIR)/* $(BUILD_DIR)
 	@cp LICENSE $(BUILD_DIR)/ 2>/dev/null || true
 	@cp README.md $(BUILD_DIR)/ 2>/dev/null || true
 	@echo "ビルド完了!"
+
+# 開発用ビルド (ソースマップあり)
+.PHONY: dev
+dev:
+	@echo "開発用ビルドを開始します..."
+	@npm run dev
+	@echo "開発用ビルド完了!"
+
+# 型チェック
+.PHONY: typecheck
+typecheck:
+	@echo "型チェックを実行しています..."
+	@npx tsc --noEmit
+	@echo "型チェック完了!"
+
+# コードスタイルチェック (ESLint)
+.PHONY: lint
+lint:
+	@echo "ESLintを実行しています..."
+	@npx eslint --ext .ts src/
+	@echo "Lintチェック完了!"
+
+# コードスタイル自動修正
+.PHONY: lint-fix
+lint-fix:
+	@echo "ESLintの自動修正を実行しています..."
+	@npx eslint --fix --ext .ts src/
+	@echo "Lint自動修正完了!"
 
 # パッケージング（zip生成）
 .PHONY: package
 package:
 	@echo "パッケージングを開始します... バージョン: $(VERSION)"
-	@cd $(BUILD_DIR) && zip -r ../$(ZIP_FILE) ./* -x "*.DS_Store" "*__MACOSX*" "*.git*"
+	@mkdir -p $(BUILD_DIR)
+	@cd $(BUILD_DIR) && zip -r $(ZIP_FILE) ./* -x "*.DS_Store" "*__MACOSX*" "*.git*" "*.map"
 	@echo "パッケージング完了! $(ZIP_FILE) を生成しました"
 	@echo "このファイルをChrome Web Storeにアップロードしてください"
 
@@ -55,6 +74,7 @@ clean:
 clean-all: clean
 	@echo "配布ファイルを削除します..."
 	@rm -rf $(DIST_DIR)
+	@rm -rf node_modules
 	@echo "すべてのクリーンアップが完了しました!"
 
 # ヘルプを表示
@@ -62,7 +82,11 @@ clean-all: clean
 help:
 	@echo "利用可能なコマンド:"
 	@echo "  make            : 拡張機能をビルドしてzipファイルを生成します"
-	@echo "  make build      : ビルドディレクトリに必要なファイルをコピーします"
+	@echo "  make build      : TypeScriptコードをビルドします"
+	@echo "  make dev        : 開発用ビルドを実行します（ソースマップあり）"
+	@echo "  make typecheck  : 型チェックを実行します"
+	@echo "  make lint       : ESLintでコードスタイルをチェックします"
+	@echo "  make lint-fix   : ESLintでコードスタイルを自動修正します"
 	@echo "  make package    : ビルドディレクトリからzipファイルを生成します"
 	@echo "  make beta       : ベータ版の拡張機能をビルドしてzipファイルを生成します"
 	@echo "  make clean      : ビルドディレクトリを削除します"
@@ -84,16 +108,9 @@ beta: clean beta-build beta-package
 .PHONY: beta-build
 beta-build:
 	@echo "ベータ版ビルドを開始します..."
+	@npm run build
 	@mkdir -p $(BETA_BUILD_DIR)
-	@mkdir -p $(DIST_DIR)
-	@cp manifest.json $(BETA_BUILD_DIR)/
-	@cp background.js $(BETA_BUILD_DIR)/
-	@cp content.js $(BETA_BUILD_DIR)/
-	@cp -r popup $(BETA_BUILD_DIR)/
-	@cp -r options $(BETA_BUILD_DIR)/
-	@cp -r lib $(BETA_BUILD_DIR)/
-	@cp -r config $(BETA_BUILD_DIR)/
-	@cp -r icons $(BETA_BUILD_DIR)/
+	@cp -r $(DIST_DIR)/* $(BETA_BUILD_DIR)
 	@cp LICENSE $(BETA_BUILD_DIR)/ 2>/dev/null || true
 	@cp README.md $(BETA_BUILD_DIR)/ 2>/dev/null || true
 	
@@ -118,6 +135,18 @@ beta-build:
 .PHONY: beta-package
 beta-package:
 	@echo "ベータ版パッケージングを開始します... バージョン: $(VERSION)-BETA"
-	@cd $(BETA_BUILD_DIR) && zip -r ../$(BETA_ZIP_FILE) ./* -x "*.DS_Store" "*__MACOSX*" "*.git*"
+	@mkdir -p $(BUILD_DIR)
+	@cd $(BETA_BUILD_DIR) && zip -r ../$(BETA_ZIP_FILE) ./* -x "*.DS_Store" "*__MACOSX*" "*.git*" "*.map"
 	@echo "ベータ版パッケージング完了! $(BETA_ZIP_FILE) を生成しました"
 	@echo "このファイルをChrome Web Storeにアップロードしてください"
+
+# 一から全部ビルド
+.PHONY: rebuild
+rebuild: clean-all install build package
+
+# npm依存関係インストール
+.PHONY: install
+install:
+	@echo "npm依存関係をインストールしています..."
+	@npm install
+	@echo "インストール完了!"

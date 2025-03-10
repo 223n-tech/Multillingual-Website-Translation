@@ -460,4 +460,5 @@ yarn-error.log*
 # キャッシュ
 .cache/
 
-handover-document.*
+# TypeScript
+/node_modules/
