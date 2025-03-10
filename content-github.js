@@ -16,7 +16,8 @@ function translateDirectKeywords(rootElement) {
     "Security": "セキュリティ",
     "Insights": "インサイト",
     "Settings": "設定",
-    "Discussions": "ディスカッション"
+    "Discussions": "ディスカッション",
+    "Terms": "規約" // フッター用に追加
   };
   
   // テキストノードとdata-content属性を検索
@@ -83,6 +84,43 @@ function processGitHubSpecificElements(rootElement, translationMaps, contextMapp
   translatedCount += processAchievementsElements(rootElement, translationMaps, contextMapping);
   translatedCount += processProfileElements(rootElement, translationMaps, contextMapping);
   translatedCount += processActionListItems(rootElement, translationMaps, contextMapping);
+  translatedCount += processFooterElements(rootElement, translationMaps, contextMapping);
+  
+  return translatedCount;
+}
+
+// フッター要素の処理
+function processFooterElements(rootElement, translationMaps, contextMapping) {
+  let translatedCount = 0;
+  
+  // フッター要素を検索
+  const footerElements = rootElement.querySelectorAll(
+    'footer a, [data-analytics-event*="Footer"], .footer-links a, .Link--secondary.Link'
+  );
+  
+  debugLog(`フッター要素: ${footerElements.length}個検出`);
+  
+  footerElements.forEach(element => {
+    const text = element.textContent.trim();
+    if (!text) return;
+    
+    // フッターのコンテキストで翻訳を試みる
+    if (translationMaps.byContext["フッター"] && 
+        translationMaps.byContext["フッター"][text]) {
+      element.textContent = translationMaps.byContext["フッター"][text];
+      debugLog(`フッター要素翻訳: "${text}" -> "${translationMaps.byContext["フッター"][text]}"`);
+      translatedCount++;
+      return;
+    }
+    
+    // グローバル翻訳を試みる
+    if (contextMapping.settings.empty_context === "global" && 
+        translationMaps.global[text]) {
+      element.textContent = translationMaps.global[text];
+      debugLog(`フッター要素翻訳（グローバル）: "${text}" -> "${translationMaps.global[text]}"`);
+      translatedCount++;
+    }
+  });
   
   return translatedCount;
 }
@@ -246,7 +284,7 @@ function processRepositoryTabs(rootElement, translationMaps, contextMapping) {
         debugLog(`data-content翻訳（グローバル）: "${content}" -> "${translation}"`);
         translatedCount++;
       }
-      // 正規表現翻訳を試みる
+      // 正規表現での翻訳を試みる
       else {
         for (const regexEntry of translationMaps.regexPatterns) {
           // コンテキストが一致するか確認

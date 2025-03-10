@@ -23,7 +23,7 @@ contexts:
       - ".header-nav-item"
       - ".HeaderMenu-link"
       - ".header-menu-wrapper a"
-      - ".ActionListItem-label"  # 新しいクラスを追加
+      - ".ActionListItem-label"
     description: "ヘッダー部分のナビゲーションメニュー"
   
   # リポジトリタブ
@@ -223,5 +223,11 @@ regex_contexts:
 
   # フッター
   "フッター":
-    apply_to:
+    selectors:
       - ".Link--secondary.Link"
+      - "footer a"                          # フッター内のすべてのリンク
+      - "[data-analytics-event*='Footer']"  # Footerカテゴリーのイベント属性を持つ要素
+      - ".footer-links a"
+      - ".footer a"
+    description: "フッター要素"
+

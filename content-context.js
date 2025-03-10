@@ -107,6 +107,12 @@ function determineElementContext(element, contextMapping) {
     return null;
   }
   
+  // データ属性をチェック
+  const analyticsEvent = element.getAttribute('data-analytics-event');
+  if (analyticsEvent && analyticsEvent.includes('Footer')) {
+    return "フッター";
+  }
+  
   // 各コンテキスト定義をチェック
   for (const [contextName, contextConfig] of Object.entries(contextMapping.contexts)) {
     if (!contextConfig.selectors) continue;
