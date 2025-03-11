@@ -30,6 +30,13 @@ export class ContentTranslationService {
   private translationEngine: TranslationEngine | null = null;
   private contextDetector: ContextDetector | null = null;
   private processedElements = new WeakSet<Element | Node>();
+  private translationTimeout: number | null = null;
+  private retryCount = 0;
+  private maxRetries = 3;
+  private translationStartTime = 0;
+
+  // 一度のセッションで実行した翻訳操作を追跡
+  private translationSessionCompleted = false;
 
   constructor() {
     contentDebugLog('コンテンツ翻訳サービス初期化');
@@ -39,16 +46,35 @@ export class ContentTranslationService {
    * 翻訳開始
    */
   public async startTranslation(domain: string): Promise<void> {
-    if (this.isTranslating) {
+    // 既に実行済みで、同じドメインの場合はスキップ
+    if (this.isTranslating && this.currentDomain === domain) {
       contentDebugLog('すでに翻訳処理中のため、スキップします');
+      return;
+    }
+
+    // 現在の翻訳セッションの状態をリセット
+    if (this.currentDomain !== domain) {
+      this.translationSessionCompleted = false;
+    }
+
+    // 既に同一ドメインで翻訳が完了していたらスキップ
+    if (this.translationSessionCompleted && this.currentDomain === domain) {
+      contentDebugLog('このドメインは既に翻訳済みです');
       return;
     }
 
     try {
       this.isTranslating = true;
       this.currentDomain = domain;
+      this.translationStartTime = performance.now();
 
       contentDebugLog('翻訳開始:', domain);
+
+      // 既存のタイムアウトをクリア
+      if (this.translationTimeout !== null) {
+        window.clearTimeout(this.translationTimeout);
+        this.translationTimeout = null;
+      }
 
       // 翻訳データとコンテキストマッピングを取得
       await this.loadTranslationsAndMapping(domain);
@@ -72,18 +98,72 @@ export class ContentTranslationService {
       const startTime = performance.now();
       const translatedCount = this.translationEngine.applyTranslations(document.body);
       const endTime = performance.now();
+      const timeSpent = endTime - startTime;
 
-      contentDebugLog(
-        `翻訳完了: ${translatedCount}個の翻訳を適用 (${(endTime - startTime).toFixed(2)}ms)`,
-      );
+      contentDebugLog(`翻訳完了: ${translatedCount}個の翻訳を適用 (${timeSpent.toFixed(2)}ms)`);
+
+      // 翻訳セッション完了をマーク
+      this.translationSessionCompleted = true;
 
       // DOM変更監視の設定
       this.setupDomObserver();
+
+      // 動的に読み込まれるコンテンツのために遅延再翻訳
+      this.scheduleDelayedTranslation();
     } catch (error) {
       console.error('翻訳実行エラー:', error);
       contentDebugLog('翻訳実行例外', error);
+
+      // エラー時にリトライ
+      this.retryTranslationIfNeeded();
     } finally {
       this.isTranslating = false;
+    }
+  }
+
+  /**
+   * 遅延翻訳をスケジュール
+   */
+  private scheduleDelayedTranslation(): void {
+    // 最初の翻訳から一定時間後に再度翻訳を実行（GitHubのような動的コンテンツサイト向け）
+    const delayTime = 1500; // 1.5秒後
+
+    this.translationTimeout = window.setTimeout(() => {
+      this.translationTimeout = null;
+
+      if (this.currentDomain && this.translationEngine) {
+        contentDebugLog('遅延翻訳実行 (動的コンテンツ対応)');
+        this.translationEngine.applyTranslations(document.body);
+
+        // さらに追加の遅延翻訳をスケジュール（SPAなどのさらなる動的コンテンツ対応）
+        this.translationTimeout = window.setTimeout(() => {
+          if (this.currentDomain && this.translationEngine) {
+            contentDebugLog('最終遅延翻訳実行');
+            this.translationEngine.applyTranslations(document.body);
+          }
+          this.translationTimeout = null;
+        }, 2500);
+      }
+    }, delayTime);
+  }
+
+  /**
+   * エラー時の翻訳リトライ
+   */
+  private retryTranslationIfNeeded(): void {
+    // 最大リトライ回数に達していない場合のみリトライ
+    if (this.retryCount < this.maxRetries && this.currentDomain) {
+      this.retryCount++;
+      const domain = this.currentDomain;
+
+      contentDebugLog(`翻訳リトライ (${this.retryCount}/${this.maxRetries})`);
+
+      // 少し待ってから再試行
+      setTimeout(() => {
+        this.startTranslation(domain);
+      }, 1000 * this.retryCount); // リトライ間隔を徐々に延ばす
+    } else {
+      this.retryCount = 0;
     }
   }
 
@@ -100,9 +180,19 @@ export class ContentTranslationService {
       contentDebugLog('MutationObserver切断完了');
     }
 
+    // タイムアウトをクリア
+    if (this.translationTimeout !== null) {
+      window.clearTimeout(this.translationTimeout);
+      this.translationTimeout = null;
+    }
+
     // 依存サービスをクリア
     this.translationEngine = null;
     this.contextDetector = null;
+
+    // リセット状態をクリア
+    this.translationSessionCompleted = false;
+    this.retryCount = 0;
 
     // 処理済み要素リストをクリア
     this.processedElements = new WeakSet<Element | Node>();
@@ -120,18 +210,7 @@ export class ContentTranslationService {
       contentDebugLog('翻訳データとコンテキストマッピングの読み込み開始', domain);
 
       // バックグラウンドスクリプトから翻訳データとコンテキストマッピングを取得
-      type ResponseType = {
-        success?: boolean;
-        translations?: string;
-        contextMapping?: string;
-        error?: string;
-      };
-
-      const response = await new Promise<ResponseType>((resolve) => {
-        chrome.runtime.sendMessage({ action: 'getTranslationsAndMapping', domain }, (response) =>
-          resolve(response),
-        );
-      });
+      const response = await this.fetchTranslationData(domain);
 
       contentDebugLog('翻訳データレスポンス受信', response);
 
@@ -170,7 +249,28 @@ export class ContentTranslationService {
     } catch (error) {
       console.error('翻訳データの読み込みに失敗しました:', error);
       contentDebugLog('翻訳データ読み込み例外', error);
+      throw error;
     }
+  }
+
+  /**
+   * 翻訳データのフェッチ（Promise版）
+   */
+  private fetchTranslationData(domain: string): Promise<TranslationsResponse> {
+    return new Promise((resolve) => {
+      // タイムアウト設定
+      const timeoutId = setTimeout(() => {
+        resolve({
+          success: false,
+          error: 'リクエストタイムアウト',
+        });
+      }, 5000);
+
+      chrome.runtime.sendMessage({ action: 'getTranslationsAndMapping', domain }, (response) => {
+        clearTimeout(timeoutId);
+        resolve(response || { success: false, error: 'レスポンスなし' });
+      });
+    });
   }
 
   /**
@@ -187,9 +287,14 @@ export class ContentTranslationService {
       };
 
       const response = await new Promise<LegacyResponseType>((resolve) => {
-        chrome.runtime.sendMessage({ action: 'getTranslations', domain }, (response) =>
-          resolve(response),
-        );
+        const timeoutId = setTimeout(() => {
+          resolve({ success: false, error: 'リクエストタイムアウト' });
+        }, 5000);
+
+        chrome.runtime.sendMessage({ action: 'getTranslations', domain }, (response) => {
+          clearTimeout(timeoutId);
+          resolve(response || { success: false, error: 'レスポンスなし' });
+        });
       });
 
       if (response && response.success && response.translations) {
@@ -210,10 +315,12 @@ export class ContentTranslationService {
           response ? response.error : 'レスポンスなし',
         );
         contentDebugLog('旧形式翻訳データ取得失敗', response);
+        throw new Error('翻訳データの取得に失敗しました');
       }
     } catch (error) {
       console.error('旧形式による翻訳データの読み込みに失敗しました:', error);
       contentDebugLog('旧形式翻訳データ読み込み例外', error);
+      throw error;
     }
   }
 
@@ -280,9 +387,6 @@ export class ContentTranslationService {
           };
 
           maps.regexPatterns.push(regexPattern);
-          contentDebugLog(
-            `正規表現パターンを追加: ${entry.original} (コンテキスト: ${context || 'グローバル'})`,
-          );
         } catch (error) {
           console.error(`無効な正規表現: ${entry.original}`, error);
         }
