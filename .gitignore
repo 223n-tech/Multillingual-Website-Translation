@@ -456,7 +456,7 @@ yarn-error.log*
 # 一時ファイル
 .tmp/
 .temp/
-src/utils/buildInfo.ts
+buildInfo.ts
 
 # キャッシュ
 .cache/
