@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "GitHub Translator",
   "description": "GitHub UIの翻訳を行うChrome拡張機能",
-  "version": "0.24.0",
+  "version": "0.27.0",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
