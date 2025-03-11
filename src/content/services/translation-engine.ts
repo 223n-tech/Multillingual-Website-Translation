@@ -43,19 +43,101 @@ export class TranslationEngine {
    * 翻訳を適用
    */
   public applyTranslations(rootNode: Node): number {
+    // パフォーマンス向上のために、処理済みノードを早期にスキップ
+    if (this.processedElements.has(rootNode)) {
+      return 0;
+    }
+
     let translatedCount = 0;
 
     // 特定のキーワードを直接翻訳
     if (rootNode instanceof Element) {
+      // 翻訳対象外の要素はスキップ
+      const tagName = rootNode.tagName.toUpperCase();
+      if (this.SKIP_TAGS.includes(tagName)) {
+        return 0;
+      }
+
+      // HTMLElementの場合のみisContentEditableをチェック
+      if (rootNode instanceof HTMLElement && rootNode.isContentEditable) {
+        return 0;
+      }
+
+      // データ属性でスキップフラグがある場合はスキップ
+      if (
+        rootNode instanceof HTMLElement &&
+        rootNode.dataset &&
+        rootNode.dataset.noTranslate === 'true'
+      ) {
+        return 0;
+      }
+
       translatedCount += this.translateDirectKeywords(rootNode);
     }
 
     // コンテキストマッピングに基づく翻訳
     translatedCount += this.applyTranslationsWithContextMapping(rootNode);
 
-    // GitHub固有の特殊要素処理
-    if (this.githubTranslator && rootNode instanceof Element) {
+    // GitHub固有の特殊要素処理（重い処理なので必要な場合のみ実行）
+    if (translatedCount === 0 && this.githubTranslator && rootNode instanceof Element) {
       translatedCount += this.githubTranslator.processGitHubSpecificElements(rootNode);
+    }
+
+    return translatedCount;
+  }
+
+  /**
+   * 正規表現パターンを適用して翻訳（最適化版）
+   */
+  private applyRegexPatterns(element: Element, text: string, attributeName?: string): number {
+    let translatedCount = 0;
+    const elementContext = this.contextDetector.determineElementContext(element);
+
+    // テキストが短い場合は正規表現処理をスキップ（パフォーマンス向上）
+    if (text.length < 3) {
+      return 0;
+    }
+
+    // コンテキストに関連する正規表現のみを使用（全パターンを試行しない）
+    const relevantPatterns = this.translationMaps.regexPatterns.filter((pattern) => {
+      return (
+        pattern.context === '' ||
+        pattern.context === elementContext ||
+        this.contextDetector.isRegexApplicable(element, pattern.context)
+      );
+    });
+
+    // 関連するパターンがない場合は早期リターン
+    if (relevantPatterns.length === 0) {
+      return 0;
+    }
+
+    // 最大4つのパターンのみを試行（パフォーマンス向上）
+    const patternsToTry = relevantPatterns.slice(0, 4);
+
+    for (const regexEntry of patternsToTry) {
+      regexEntry.pattern.lastIndex = 0;
+      if (regexEntry.pattern.test(text)) {
+        // マッチしたらパターンをリセットして置換を実行
+        regexEntry.pattern.lastIndex = 0;
+        const newContent = text.replace(regexEntry.pattern, regexEntry.replacement);
+
+        if (newContent !== text) {
+          if (attributeName) {
+            element.setAttribute(attributeName, newContent);
+
+            // テキストが一致する場合は同様に翻訳
+            if (element.textContent?.trim() === text) {
+              element.textContent = newContent;
+            }
+          } else {
+            element.textContent = newContent;
+          }
+
+          translatedCount++;
+          break;
+        }
+      }
     }
 
     return translatedCount;

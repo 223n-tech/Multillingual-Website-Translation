@@ -26,6 +26,18 @@ export class ContentMessageHandler {
     try {
       contentDebugLog('翻訳開始メッセージ受信:', message);
 
+      // 既に翻訳処理中なら重複実行を避ける
+      if (this.translationService.getIsTranslating()) {
+        contentDebugLog('既に翻訳処理中のため、リクエストを無視します');
+        if (sendResponse) {
+          sendResponse({
+            success: true,
+            error: 'already_translating',
+          });
+        }
+        return;
+      }
+
       await this.translationService.startTranslation(message.domain);
 
       if (sendResponse) {
@@ -54,7 +66,8 @@ export class ContentMessageHandler {
     try {
       contentDebugLog('翻訳停止メッセージ受信');
 
-      this.translationService.resetTranslation();
+      // ページ再読み込みは最後のリゾートとして、まずは翻訳をリセットする
+      this.translationService.resetTranslation(false); // 再読み込みなし
 
       if (sendResponse) {
         sendResponse({ success: true });
@@ -62,6 +75,32 @@ export class ContentMessageHandler {
     } catch (error) {
       console.error('翻訳停止処理エラー:', error);
       contentDebugLog('翻訳停止エラー', error);
+
+      if (sendResponse) {
+        sendResponse({
+          success: false,
+          error: error instanceof Error ? error.message : '不明なエラー',
+        });
+      }
+    }
+  }
+
+  /**
+   * MutationObserverを無効化する
+   */
+  public handleDisableObservers(sendResponse?: (response: GenericResponse) => void): void {
+    try {
+      contentDebugLog('MutationObserver無効化リクエスト受信');
+
+      // 翻訳サービスを通じて DOM Observer を無効化
+      this.translationService.disableObservers();
+
+      if (sendResponse) {
+        sendResponse({ success: true });
+      }
+    } catch (error) {
+      console.error('MutationObserver無効化エラー:', error);
+      contentDebugLog('MutationObserver無効化エラー', error);
 
       if (sendResponse) {
         sendResponse({

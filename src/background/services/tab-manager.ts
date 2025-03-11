@@ -54,21 +54,33 @@ export class TabManager {
     }
   }
 
-  /**
-   * 翻訳開始メッセージをタブに送信
-   */
   private sendStartTranslationMessage(tabId: number, domain: string): void {
-    chrome.tabs.sendMessage(tabId, { action: 'startTranslation', domain }, (response) => {
-      if (chrome.runtime.lastError) {
-        debugLog('メッセージ送信エラー:', chrome.runtime.lastError);
+    // 最大再試行回数を設定
+    const maxRetries = 3;
+    let retryCount = 0;
 
-        // コンテンツスクリプトがまだ読み込まれていない可能性があるため、遅延して再試行
-        setTimeout(() => {
-          chrome.tabs.sendMessage(tabId, { action: 'startTranslation', domain });
-        }, 1000);
-      } else {
-        debugLog('翻訳開始メッセージ送信成功:', response);
-      }
-    });
+    const tryToSendMessage = () => {
+      chrome.tabs.sendMessage(tabId, { action: 'startTranslation', domain }, (response) => {
+        if (chrome.runtime.lastError) {
+          debugLog('メッセージ送信エラー:', chrome.runtime.lastError);
+
+          // 最大再試行回数に達していなければ再試行
+          if (retryCount < maxRetries) {
+            retryCount++;
+            debugLog(`${retryCount}回目の再試行を${retryCount * 1000}ms後に実行します`);
+
+            // 再試行間隔を徐々に長くする
+            setTimeout(tryToSendMessage, retryCount * 1000);
+          } else {
+            debugLog(`最大再試行回数(${maxRetries})に達したため中止します`);
+          }
+        } else {
+          debugLog('翻訳開始メッセージ送信成功:', response);
+        }
+      });
+    };
+
+    // 最初の試行
+    tryToSendMessage();
   }
 }

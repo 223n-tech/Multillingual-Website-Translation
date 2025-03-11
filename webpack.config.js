@@ -50,23 +50,6 @@ const buildInfoContent = `export const BUILD_INFO = {
 const buildInfoPath = path.resolve(__dirname, 'src/utils/buildInfo.ts');
 fs.writeFileSync(buildInfoPath, buildInfoContent, 'utf8');
 
-// ビルド情報のJSファイルを生成
-const buildInfoRuntimeTemplate = fs.readFileSync(
-  path.resolve(__dirname, 'src/utils/buildInfoRuntime.js.template'),
-  'utf8',
-);
-
-// テンプレート内の変数を置換
-const buildInfoRuntimeContent = buildInfoRuntimeTemplate
-  .replace(/<%- version %>/g, version)
-  .replace(/<%- buildNumber %>/g, buildNumber.toString())
-  .replace(/<%- versionWithBuild %>/g, versionWithBuild)
-  .replace(/<%- buildDate %>/g, buildDate);
-
-// buildInfoLoader.jsファイルも読み込む
-const buildInfoLoaderPath = path.resolve(__dirname, 'src/utils/buildInfoLoader.js');
-const buildInfoLoaderContent = fs.readFileSync(buildInfoLoaderPath, 'utf8');
-
 export default {
   entry: {
     background: './src/background/index.ts',
@@ -75,6 +58,7 @@ export default {
     options: './src/options/index.ts',
     'entry-manager': './src/options/entry-manager/index.ts',
     'build-info-loader': './src/utils/buildInfoLoader.js',
+    debug: './src/debug/index.js',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -129,10 +113,13 @@ export default {
               .replace(/<%- buildDate %>/g, buildDate);
           },
         },
-        // 追加のCSSファイルをコピー
         {
           from: 'src/options/entry-manager/entry-manager.css',
           to: 'entry-manager.css',
+        },
+        {
+          from: 'src/debug/index.css',
+          to: 'debug.css',
         },
       ],
     }),
@@ -166,6 +153,16 @@ export default {
     }),
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    }),
+    new HtmlWebpackPlugin({
+      template: './src/debug.html',
+      filename: 'debug.html',
+      chunks: ['debug', 'build-info-loader'],
+      templateParameters: {
+        version: versionWithBuild,
+        buildDate: buildDate,
+      },
+      inject: 'body',
     }),
   ],
   devtool: 'source-map',

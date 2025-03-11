@@ -43,6 +43,13 @@ export class ContentTranslationService {
   }
 
   /**
+   * 翻訳処理中かどうかを取得
+   */
+  public getIsTranslating(): boolean {
+    return this.isTranslating;
+  }
+
+  /**
    * 翻訳開始
    */
   public async startTranslation(domain: string): Promise<void> {
@@ -169,8 +176,9 @@ export class ContentTranslationService {
 
   /**
    * 翻訳リセット
+   * @param reload ページを再読み込みするかどうか
    */
-  public resetTranslation(): void {
+  public resetTranslation(reload: boolean = true): void {
     contentDebugLog('翻訳リセット開始');
 
     // MutationObserverを切断
@@ -193,13 +201,18 @@ export class ContentTranslationService {
     // リセット状態をクリア
     this.translationSessionCompleted = false;
     this.retryCount = 0;
+    this.isTranslating = false;
 
     // 処理済み要素リストをクリア
     this.processedElements = new WeakSet<Element | Node>();
 
-    contentDebugLog('ページ再読み込み実行');
-    // ページを再読み込み
-    window.location.reload();
+    if (reload) {
+      contentDebugLog('ページ再読み込み実行');
+      // ページを再読み込み
+      window.location.reload();
+    } else {
+      contentDebugLog('ページ再読み込みなしでリセット完了');
+    }
   }
 
   /**
@@ -425,5 +438,27 @@ export class ContentTranslationService {
     });
 
     return maps;
+  }
+
+  /**
+   * MutationObserverを無効化
+   */
+  public disableObservers(): void {
+    contentDebugLog('MutationObserver無効化開始');
+
+    // MutationObserverを切断
+    if (this.domObserver) {
+      this.domObserver.disconnect();
+      this.domObserver = null;
+      contentDebugLog('MutationObserver切断完了');
+    }
+
+    // タイムアウトをクリア
+    if (this.translationTimeout !== null) {
+      window.clearTimeout(this.translationTimeout);
+      this.translationTimeout = null;
+    }
+
+    contentDebugLog('MutationObserver無効化完了');
   }
 }

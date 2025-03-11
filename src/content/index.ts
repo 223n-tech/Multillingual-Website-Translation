@@ -31,25 +31,45 @@ class ContentScript {
    */
   private initialize(): void {
     if (this.initialized) {
+      contentDebugLog('すでに初期化済みのため初期化をスキップします');
       return;
     }
+
+    contentDebugLog('コンテンツスクリプト初期化開始');
 
     // バックグラウンドスクリプトからのメッセージを受信
     chrome.runtime.onMessage.addListener(
       (message: BaseMessage, sender, sendResponse: MessageResponseCallback) => {
         contentDebugLog('メッセージ受信:', message);
 
-        if (message.action === 'startTranslation') {
-          this.messageHandler.handleStartTranslation(
-            message as StartTranslationMessage,
-            sendResponse,
-          );
-          return true;
-        } else if (message.action === 'stopTranslation') {
-          this.messageHandler.handleStopTranslation(
-            message as StopTranslationMessage,
-            sendResponse,
-          );
+        try {
+          if (message.action === 'startTranslation') {
+            // 初期化完了前でもメッセージは受け取れるようにする
+            this.messageHandler.handleStartTranslation(
+              message as StartTranslationMessage,
+              sendResponse,
+            );
+            return true;
+          } else if (message.action === 'stopTranslation') {
+            this.messageHandler.handleStopTranslation(
+              message as StopTranslationMessage,
+              sendResponse,
+            );
+            return true;
+          } else if (message.action === 'disableObservers') {
+            // MutationObserver無効化
+            this.messageHandler.handleDisableObservers(sendResponse);
+            return true;
+          } else if (message.action === 'testConnection') {
+            // 接続テスト用
+            sendResponse({ success: true, message: 'コンテンツスクリプト接続OK' });
+            return true;
+          }
+        } catch (error) {
+          contentDebugLog('メッセージ処理中にエラーが発生しました:', error);
+          if (sendResponse) {
+            sendResponse({ success: false, error: String(error) });
+          }
           return true;
         }
 
@@ -58,6 +78,7 @@ class ContentScript {
     );
 
     // DOMのロード完了時に自動的に翻訳を開始
+    // 既にロード完了している場合にも対応
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', this.onDOMContentLoaded.bind(this));
     } else {
@@ -65,7 +86,7 @@ class ContentScript {
       // ただし短いタイムアウトを設定して他のスクリプトが先に実行されるようにする
       setTimeout(() => {
         this.onDOMContentLoaded();
-      }, 50);
+      }, 100);
     }
 
     this.initialized = true;

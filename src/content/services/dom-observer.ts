@@ -52,11 +52,11 @@ export class DomObserver {
     // 新しいObserverを作成
     this.observer = new MutationObserver(this.handleMutations.bind(this));
 
-    // より効率的な監視設定
+    // パフォーマンスを考慮した監視設定
+    // 特定の属性のみを監視し、テキスト変更は監視しない
     this.observer.observe(document.body, {
       childList: true,
       subtree: true,
-      characterData: true,
       attributes: true,
       attributeFilter: [
         'class',
@@ -66,6 +66,7 @@ export class DomObserver {
         'data-view-component',
         'title',
       ],
+      // characterData: true, // テキスト変更の監視は高コストなので無効化
     });
 
     contentDebugLog('MutationObserver設定完了');
@@ -73,6 +74,96 @@ export class DomObserver {
     // 初期ページロード後、URLの変更を監視（GitHubのSPA対応）
     if (this.isGitHubDomain) {
       this.setupUrlChangeDetection();
+    }
+  }
+
+  /**
+   * バッチ処理された変更を処理
+   */
+  private processBatchedMutations(): void {
+    if (this.processingLock || this.disconnectRequested) return;
+
+    this.processingLock = true;
+    try {
+      // カウンタが多すぎる場合はリセット
+      this.mutationCounter++;
+      if (this.mutationCounter > 300) {
+        // 1000から300に減らす
+        contentDebugLog('変更が多すぎるため、カウンタをリセットします');
+        this.mutationCounter = 0;
+        this.pendingMutations = [];
+        this.processingLock = false;
+        this.isTranslating = false;
+        return;
+      }
+
+      // 現在の保留中の変更を取得
+      const allMutations = [...this.pendingMutations];
+      this.pendingMutations = []; // 保留リストをクリア
+
+      if (allMutations.length === 0) {
+        this.processingLock = false;
+        this.isTranslating = false;
+        return;
+      }
+
+      contentDebugLog(`DOM変更検出 (${allMutations.length}個の変更)`);
+
+      // 処理するノードを収集（重複を排除）
+      const nodesToProcess = this.collectNodesToProcess(allMutations);
+
+      // 収集したノードがなければ処理終了
+      if (nodesToProcess.size === 0) {
+        this.processingLock = false;
+        this.isTranslating = false;
+        return;
+      }
+
+      // 一度に処理する量をさらに制限
+      const maxMutationsPerBatch = 10; // 20から10に減らす
+      const nodesToProcessArray = Array.from(nodesToProcess).slice(0, maxMutationsPerBatch);
+
+      // 実際の翻訳処理を開始
+      this.translationInProgress = true;
+      let translatedCount = 0;
+
+      try {
+        // GitHubドメインの場合は特殊処理を適用
+        if (this.isGitHubDomain) {
+          translatedCount += this.handleGitHubSpecificChanges(allMutations);
+        }
+
+        // 通常の翻訳処理
+        nodesToProcessArray.forEach((node) => {
+          if (node instanceof Element || node instanceof Text) {
+            translatedCount += this.translationEngine.applyTranslations(node);
+          }
+        });
+
+        if (translatedCount > 0) {
+          contentDebugLog(`DOM変更に対して${translatedCount}個の翻訳を適用`);
+        }
+      } catch (error) {
+        console.error('翻訳処理中のエラー:', error);
+      }
+
+      this.translationInProgress = false;
+
+      // 処理中に新しい変更がたまっていたら、次の処理をスケジュール
+      if (this.pendingMutations.length > 0) {
+        // スロットリングを強化
+        this.debounceTimer = window.setTimeout(() => {
+          this.debounceTimer = null;
+          this.processBatchedMutations();
+        }, this.throttleDelay * 2); // スロットリング時間を2倍に
+      }
+    } catch (error) {
+      console.error('DOM変更処理中のエラー:', error);
+      this.translationInProgress = false;
+    } finally {
+      // 処理が完了したらフラグを解除
+      this.processingLock = false;
+      this.isTranslating = false;
     }
   }
 
@@ -195,89 +286,6 @@ export class DomObserver {
     // すべての変更をまとめて処理
     this.pendingMutations = this.pendingMutations.concat(mutations);
     this.processBatchedMutations();
-  }
-
-  /**
-   * バッチ処理された変更を処理
-   */
-  private processBatchedMutations(): void {
-    if (this.processingLock || this.disconnectRequested) return;
-
-    this.processingLock = true;
-    try {
-      // カウンタが多すぎる場合はリセット
-      this.mutationCounter++;
-      if (this.mutationCounter > 1000) {
-        contentDebugLog('変更が多すぎるため、カウンタをリセットします');
-        this.mutationCounter = 0;
-        this.pendingMutations = [];
-        this.processingLock = false;
-        this.isTranslating = false;
-        return;
-      }
-
-      // 現在の保留中の変更を取得
-      const allMutations = [...this.pendingMutations];
-      this.pendingMutations = []; // 保留リストをクリア
-
-      if (allMutations.length === 0) {
-        this.processingLock = false;
-        this.isTranslating = false;
-        return;
-      }
-
-      contentDebugLog(`DOM変更検出 (${allMutations.length}個の変更)`);
-
-      // 処理するノードを収集（重複を排除）
-      const nodesToProcess = this.collectNodesToProcess(allMutations);
-
-      // 収集したノードがなければ処理終了
-      if (nodesToProcess.size === 0) {
-        this.processingLock = false;
-        this.isTranslating = false;
-        return;
-      }
-
-      // 実際の翻訳処理を開始
-      this.translationInProgress = true;
-      let translatedCount = 0;
-
-      // 一度に処理する量を制限
-      const nodesToProcessArray = Array.from(nodesToProcess).slice(0, this.maxMutationsPerBatch);
-
-      // GitHubドメインの場合は特殊処理を適用
-      if (this.isGitHubDomain) {
-        translatedCount += this.handleGitHubSpecificChanges(allMutations);
-      }
-
-      // 通常の翻訳処理
-      nodesToProcessArray.forEach((node) => {
-        if (node instanceof Element || node instanceof Text) {
-          translatedCount += this.translationEngine.applyTranslations(node);
-        }
-      });
-
-      if (translatedCount > 0) {
-        contentDebugLog(`DOM変更に対して${translatedCount}個の翻訳を適用`);
-      }
-
-      this.translationInProgress = false;
-
-      // 処理中に新しい変更がたまっていたら、次の処理をスケジュール
-      if (this.pendingMutations.length > 0) {
-        this.debounceTimer = window.setTimeout(() => {
-          this.debounceTimer = null;
-          this.processBatchedMutations();
-        }, this.throttleDelay);
-      }
-    } catch (error) {
-      console.error('DOM変更処理中のエラー:', error);
-      this.translationInProgress = false;
-    } finally {
-      // 処理が完了したらフラグを解除
-      this.processingLock = false;
-      this.isTranslating = false;
-    }
   }
 
   /**
