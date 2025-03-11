@@ -1,4 +1,5 @@
 import '../options.css';
+import './entry-manager.css';
 import { uiDebugLog } from '../../utils/debug';
 import { EntryManagerController } from '../controllers/entry-manager-controller';
 
