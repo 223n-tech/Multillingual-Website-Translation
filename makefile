@@ -2,7 +2,10 @@
 
 # 設定変数
 EXTENSION_NAME = github-translation-extension
-VERSION := $(shell grep '"version"' src/manifest.json | sed -E 's/.*"version": "([^"]+)".*/\1/')
+# バージョン情報を取得（ビルド番号を含む）
+VERSION := $(shell node -e "const fs=require('fs'); const manifest=JSON.parse(fs.readFileSync('src/manifest.json')); const pkg=JSON.parse(fs.readFileSync('package.json')); console.log(manifest.version + '.' + (pkg.buildNumber || '0'));")
+# ビルド情報
+BUILD_DATE := $(shell date "+%Y-%m-%d %H:%M:%S")
 DIST_DIR = ./dist
 BUILD_DIR = ./build
 ZIP_FILE = $(BUILD_DIR)/$(EXTENSION_NAME)-$(VERSION).zip
@@ -17,6 +20,7 @@ all: clean build package
 .PHONY: build
 build:
 	@echo "TypeScriptビルドを開始します..."
+	@echo "バージョン: $(VERSION) ($(BUILD_DATE))"
 	@npm run build
 	@mkdir -p $(BUILD_DIR)
 	@cp -r $(DIST_DIR)/* $(BUILD_DIR)
@@ -92,13 +96,47 @@ help:
 	@echo "  make clean      : ビルドディレクトリを削除します"
 	@echo "  make clean-all  : ビルドとdistディレクトリを削除します"
 	@echo "  make help       : このヘルプを表示します"
+	@echo "  make version    : 現在のバージョン情報を表示します"
+	@echo "  make bump-patch : パッチバージョンを更新します"
+	@echo "  make bump-minor : マイナーバージョンを更新します"
+	@echo "  make bump-major : メジャーバージョンを更新します"
 	@echo ""
-	@echo "現在のバージョン: $(VERSION)"
+	@echo "現在のバージョン: $(VERSION) ($(BUILD_DATE))"
 
 # バージョン情報を表示
 .PHONY: version
 version:
-	@echo "現在のバージョン: $(VERSION)"
+	@echo "現在のバージョン: $(VERSION) ($(BUILD_DATE))"
+	@node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json')); console.log('ビルド番号: ' + (pkg.buildNumber || '0'));"
+	@node -e "const fs=require('fs'); const manifest=JSON.parse(fs.readFileSync('src/manifest.json')); console.log('マニフェストバージョン: ' + manifest.version);"
+
+# パッチバージョンを上げる
+.PHONY: bump-patch
+bump-patch:
+	@node -e "const fs=require('fs'); const manifest=JSON.parse(fs.readFileSync('src/manifest.json')); const version=manifest.version.split('.'); version[2]=parseInt(version[2])+1; manifest.version=version.join('.'); fs.writeFileSync('src/manifest.json', JSON.stringify(manifest, null, 2));"
+	@echo "パッチバージョンを更新しました"
+	@make version
+
+# マイナーバージョンを上げる
+.PHONY: bump-minor
+bump-minor:
+	@node -e "const fs=require('fs'); const manifest=JSON.parse(fs.readFileSync('src/manifest.json')); const version=manifest.version.split('.'); version[1]=parseInt(version[1])+1; version[2]=0; manifest.version=version.join('.'); fs.writeFileSync('src/manifest.json', JSON.stringify(manifest, null, 2));"
+	@echo "マイナーバージョンを更新しました"
+	@make version
+
+# メジャーバージョンを上げる
+.PHONY: bump-major
+bump-major:
+	@node -e "const fs=require('fs'); const manifest=JSON.parse(fs.readFileSync('src/manifest.json')); const version=manifest.version.split('.'); version[0]=parseInt(version[0])+1; version[1]=0; version[2]=0; manifest.version=version.join('.'); fs.writeFileSync('src/manifest.json', JSON.stringify(manifest, null, 2));"
+	@echo "メジャーバージョンを更新しました"
+	@make version
+
+# ビルド番号をリセット
+.PHONY: reset-build
+reset-build:
+	@node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json')); pkg.buildNumber=0; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
+	@echo "ビルド番号をリセットしました"
+	@make version
 
 # ベータ版ビルドとパッケージング
 .PHONY: beta
@@ -108,6 +146,7 @@ beta: clean beta-build beta-package
 .PHONY: beta-build
 beta-build:
 	@echo "ベータ版ビルドを開始します..."
+	@echo "バージョン: $(VERSION)-BETA ($(BUILD_DATE))"
 	@npm run build
 	@mkdir -p $(BETA_BUILD_DIR)
 	@cp -r $(DIST_DIR)/* $(BETA_BUILD_DIR)

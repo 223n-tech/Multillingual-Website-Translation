@@ -21,6 +21,7 @@ header {
   margin-bottom: 16px;
   border-bottom: 1px solid #e1e4e8;
   padding-bottom: 8px;
+  position: relative;
 }
 
 h1 {
@@ -32,6 +33,18 @@ h2 {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 8px;
+}
+
+/* バージョン情報表示 */
+.version-info {
+  position: absolute;
+  top: 5px;
+  right: 0;
+  font-size: 11px;
+  color: #666;
+  background-color: #f1f1f1;
+  padding: 2px 6px;
+  border-radius: 10px;
 }
 
 .status-section {
@@ -127,6 +140,9 @@ footer {
   border-top: 1px solid #e1e4e8;
   padding-top: 12px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 a {
@@ -136,6 +152,13 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+/* ビルド情報 */
+.build-info {
+  font-size: 10px;
+  color: #999;
+  margin-top: 4px;
 }
 
 /* 電灯スイッチ風のトグル */

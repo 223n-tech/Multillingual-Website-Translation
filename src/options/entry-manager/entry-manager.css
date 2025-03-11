@@ -7,7 +7,7 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - 40px); /* 上下のパディングを考慮 */
 }
 
 .header {
@@ -17,6 +17,20 @@
 .domain-info {
   color: #555;
   margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* バージョン表示バッジ */
+.version-badge {
+  background-color: #f0f0f0;
+  color: #666;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  margin-left: 10px;
+  border: 1px solid #e0e0e0;
 }
 
 /* コントロールバー */
@@ -62,62 +76,78 @@
   gap: 20px;
   overflow: hidden;
   margin-bottom: 20px;
+  min-height: 300px; /* 最小高さを設定 */
 }
 
 /* エントリーリスト */
 .entry-list {
   flex: 1;
   overflow-y: auto;
-  max-height: 100%;
   border: 1px solid #ddd;
   border-radius: 4px;
   background-color: #f9f9f9;
   padding: 10px;
+  /* 最小高さを設定し、内容に応じて拡大 */
+  min-height: 300px;
+  max-height: calc(100vh - 240px); /* ヘッダー、コントロール、フッターなどを考慮 */
 }
 
 .entry-card {
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 10px;
-  margin-bottom: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
   background-color: white;
   cursor: pointer;
-  transition: box-shadow 0.2s;
+  transition: all 0.2s ease;
+  /* カードの視認性を向上 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .entry-card:hover {
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border-color: #0366d6;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 .entry-original {
   font-weight: bold;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #eee;
 }
 
 .entry-translated {
-  color: #666;
-  margin-bottom: 5px;
+  color: #444;
+  margin-bottom: 8px;
 }
 
 .entry-meta {
   display: flex;
   gap: 5px;
   font-size: 0.8rem;
+  margin-top: 5px;
 }
 
 .context-badge {
   background-color: #e0f7fa;
   color: #00838f;
-  padding: 2px 6px;
+  padding: 3px 8px;
   border-radius: 12px;
   white-space: nowrap;
+  font-weight: 500;
+  /* バッジの視認性向上 */
+  border: 1px solid rgba(0, 131, 143, 0.2);
 }
 
 .regex-badge {
   background-color: #fff8e1;
   color: #ffa000;
-  padding: 2px 6px;
+  padding: 3px 8px;
   border-radius: 12px;
+  /* バッジの視認性向上 */
+  border: 1px solid rgba(255, 160, 0, 0.2);
+  font-weight: 500;
 }
 
 .no-entries-message {
@@ -136,6 +166,8 @@
   border-radius: 4px;
   background-color: white;
   overflow-y: auto;
+  min-height: 300px;
+  max-height: calc(100vh - 240px); /* ヘッダー、コントロール、フッターなどを考慮 */
 }
 
 .detail-row {
@@ -155,6 +187,7 @@
   border-radius: 4px;
   min-height: 20px;
   word-break: break-word;
+  border: 1px solid #eee;
 }
 
 .detail-actions {
@@ -298,12 +331,24 @@
 .footer {
   padding-top: 15px;
   border-top: 1px solid #eee;
+  position: relative;
 }
 
 .footer-actions {
   display: flex;
   justify-content: center;
   gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* ビルド情報 */
+.build-info {
+  text-align: center;
+  font-size: 10px;
+  color: #999;
+  position: absolute;
+  bottom: -15px;
+  width: 100%;
 }
 
 /* メッセージコンテナ */

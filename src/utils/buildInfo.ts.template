@@ -1,0 +1,25 @@
+/**
+ * ビルド情報
+ * ※このファイルはビルド時に自動生成されます
+ */
+export interface BuildInfo {
+  /** セマンティックバージョン (e.g. 1.0.0) */
+  version: string;
+  /** ビルド番号 */
+  buildNumber: number;
+  /** フルバージョン (e.g. 1.0.0.123) */
+  fullVersion: string;
+  /** ビルド日時 (ISO形式) */
+  buildDate: string;
+}
+
+/**
+ * ビルド情報
+ * この定数はビルド時に自動生成されます
+ */
+export const BUILD_INFO: BuildInfo = {
+  version: '0.0.0',
+  buildNumber: 0,
+  fullVersion: '0.0.0.0',
+  buildDate: '1970-01-01T00:00:00.000Z'
+};
