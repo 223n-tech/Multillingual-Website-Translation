@@ -387,17 +387,17 @@ function keepAlive(): void {
 keepAlive();
 
 // エラーイベントリスナー
-self.addEventListener('error', (event: ErrorEvent) => {
+self.addEventListener('error', (event) => {
   console.error('Service Worker エラー:', event.error);
   debugLog('Service Worker エラー:', event.error);
 });
 
-self.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
+self.addEventListener('unhandledrejection', (event) => {
   console.error('Service Worker 未処理のPromise拒否:', event.reason);
   debugLog('Service Worker 未処理のPromise拒否:', event.reason);
 });
 
 // Service Worker アクティベーションイベント
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event) => {
   debugLog('Service Worker アクティブ化', event);
 });
