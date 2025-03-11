@@ -131,8 +131,8 @@ export default {
         },
         // 追加のCSSファイルをコピー
         {
-          from: 'src/options/entry-manager/entry-manager-layout.css',
-          to: 'entry-manager-layout.css',
+          from: 'src/options/entry-manager/entry-manager.css',
+          to: 'entry-manager.css',
         },
       ],
     }),
