@@ -1,419 +1,50 @@
-/* エントリー管理ページのスタイル */
-
-/* 基本レイアウト */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 40px); /* 上下のパディングを考慮 */
-}
-
-.header {
-  margin-bottom: 20px;
-}
-
-.domain-info {
-  color: #555;
-  margin-top: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* バージョン表示バッジ */
-.version-badge {
-  background-color: #f0f0f0;
-  color: #666;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 12px;
-  margin-left: 10px;
-  border: 1px solid #e0e0e0;
-}
-
-/* コントロールバー */
-.controls-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.entry-counter {
-  font-size: 0.9rem;
-  color: #666;
-}
-
-.search-filter {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-#search-input {
-  width: 200px;
-  padding: 5px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-#context-filter {
-  min-width: 150px;
-  padding: 5px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-/* メインコンテンツエリア */
-.content-area {
-  display: flex;
-  flex: 1;
-  gap: 20px;
-  overflow: hidden;
-  margin-bottom: 20px;
-  min-height: 300px; /* 最小高さを設定 */
-}
-
-/* エントリーリスト */
-.entry-list {
-  flex: 1;
-  overflow-y: auto;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: #f9f9f9;
-  padding: 10px;
-  /* 最小高さを設定し、内容に応じて拡大 */
-  min-height: 300px;
-  max-height: calc(100vh - 240px); /* ヘッダー、コントロール、フッターなどを考慮 */
-}
-
 .entry-card {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 12px;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  padding: 15px;
   margin-bottom: 12px;
-  background-color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  /* カードの視認性を向上 */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .entry-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-color: #0366d6;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px);
 }
 
 .entry-original {
-  font-weight: bold;
-  margin-bottom: 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px dashed #eee;
+  font-weight: 600;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed #eaecef;
+  color: #24292e;
 }
 
 .entry-translated {
+  font-size: 14px;
   color: #444;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  padding: 5px;
+  background-color: #f6f8fa;
+  border-radius: 4px;
 }
 
 .entry-meta {
-  display: flex;
-  gap: 5px;
-  font-size: 0.8rem;
-  margin-top: 5px;
+  margin-top: 8px;
 }
 
 .context-badge {
-  background-color: #e0f7fa;
-  color: #00838f;
+  display: inline-block;
   padding: 3px 8px;
-  border-radius: 12px;
-  white-space: nowrap;
+  font-size: 12px;
   font-weight: 500;
-  /* バッジの視認性向上 */
-  border: 1px solid rgba(0, 131, 143, 0.2);
-}
-
-.regex-badge {
-  background-color: #fff8e1;
-  color: #ffa000;
-  padding: 3px 8px;
+  line-height: 1;
   border-radius: 12px;
-  /* バッジの視認性向上 */
-  border: 1px solid rgba(255, 160, 0, 0.2);
-  font-weight: 500;
-}
-
-.no-entries-message {
-  text-align: center;
-  color: #999;
-  padding: 20px;
-}
-
-/* 詳細パネル */
-.detail-panel,
-.form-panel,
-.regex-tool {
-  flex: 1;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: white;
-  overflow-y: auto;
-  min-height: 300px;
-  max-height: calc(100vh - 240px); /* ヘッダー、コントロール、フッターなどを考慮 */
-}
-
-.detail-row {
-  margin-bottom: 15px;
-}
-
-.detail-row label {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 5px;
-  color: #555;
-}
-
-.detail-value {
-  padding: 8px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-  min-height: 20px;
-  word-break: break-word;
-  border: 1px solid #eee;
-}
-
-.detail-actions {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-/* フォーム */
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #555;
-}
-
-.form-group input[type='text'],
-.form-group textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.form-group.checkbox {
-  display: flex;
-  align-items: center;
-}
-
-.form-group.checkbox label {
-  margin-bottom: 0;
-  margin-left: 5px;
-}
-
-.form-actions {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-/* 正規表現テストツール */
-.regex-tool textarea {
-  min-height: 100px;
-}
-
-.test-actions {
-  margin: 15px 0;
-  display: flex;
-  gap: 10px;
-}
-
-.test-result-container {
-  margin-top: 15px;
-  border-top: 1px solid #eee;
-  padding-top: 15px;
-}
-
-.test-error {
-  color: #d32f2f;
-  background-color: #ffebee;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 10px;
-}
-
-.test-warning {
-  color: #f57c00;
-  background-color: #fff3e0;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 10px;
-}
-
-.match-section,
-.replace-section {
-  margin-bottom: 15px;
-}
-
-.match-section h4,
-.replace-section h4 {
-  margin-bottom: 10px;
-  color: #555;
-}
-
-.replaced-text {
-  background-color: #f5f5f5;
-  padding: 10px;
-  border-radius: 4px;
-  white-space: pre-wrap;
-}
-
-.capture-groups {
-  margin-left: 20px;
-  margin-top: 5px;
-  font-size: 0.9em;
-  color: #666;
-}
-
-/* ボタン */
-.btn {
-  padding: 8px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.btn.primary {
-  background-color: #2196f3;
-  color: white;
-}
-
-.btn.primary:hover {
-  background-color: #1976d2;
-}
-
-.btn.danger {
-  background-color: #f44336;
-  color: white;
-}
-
-.btn.danger:hover {
-  background-color: #d32f2f;
-}
-
-.btn:not(.primary):not(.danger) {
-  background-color: #e0e0e0;
-  color: #333;
-}
-
-.btn:not(.primary):not(.danger):hover {
-  background-color: #d5d5d5;
-}
-
-/* フッター */
-.footer {
-  padding-top: 15px;
-  border-top: 1px solid #eee;
-  position: relative;
-}
-
-.footer-actions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-/* ビルド情報 */
-.build-info {
-  text-align: center;
-  font-size: 10px;
-  color: #999;
-  position: absolute;
-  bottom: -15px;
-  width: 100%;
-}
-
-/* メッセージコンテナ */
-.message-container {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.message {
-  text-align: center;
-  max-width: 500px;
-  padding: 30px;
-  border-radius: 8px;
-  background-color: #f5f5f5;
-}
-
-.message h3 {
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.message p {
-  color: #666;
-}
-
-/* 強調表示 */
-.highlighted {
-  animation: highlight 2s ease-in-out;
-}
-
-@keyframes highlight {
-  0% {
-    background-color: #ffff8d;
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-/* レスポンシブデザイン */
-@media screen and (max-width: 768px) {
-  .content-area {
-    flex-direction: column;
-  }
-
-  .entry-list,
-  .detail-panel,
-  .form-panel,
-  .regex-tool {
-    max-height: 300px;
-  }
-
-  .controls-bar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .search-filter {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-
-  #search-input {
-    width: 100%;
-  }
+  background-color: #e1f5fe;
+  color: #0277bd;
+  border: 1px solid rgba(2, 119, 189, 0.2);
 }
