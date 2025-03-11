@@ -29,18 +29,25 @@ export class OptionsController {
    * 初期化
    */
   public async initialize(): Promise<void> {
-    // DOM要素を取得
-    this.initializeElements();
+    try {
+      // DOM要素を取得
+      this.initializeElements();
 
-    // イベントリスナーの設定
-    this.initializeEventListeners();
+      // 設定を読み込む
+      await this.loadSettings();
 
-    // 設定を読み込む
-    await this.loadSettings();
+      // サブコントローラーの初期化
+      this.domainController.initialize();
+      this.importExportController.initialize();
 
-    // サブコントローラーの初期化
-    this.domainController.initialize();
-    this.importExportController.initialize();
+      // UIを更新
+      this.renderDomainList();
+
+      // イベントリスナーの設定
+      this.initializeEventListeners();
+    } catch (error) {
+      console.error('初期化エラー:', error);
+    }
   }
 
   /**

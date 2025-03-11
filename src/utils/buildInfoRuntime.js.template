@@ -1,0 +1,7 @@
+// buildInfoRuntime.js.template
+window.BUILD_INFO = {
+  version: "<%- version %>",
+  buildNumber: <%- buildNumber %>,
+  fullVersion: "<%- versionWithBuild %>",
+  buildDate: "<%- buildDate %>"
+};

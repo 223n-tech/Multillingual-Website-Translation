@@ -2,7 +2,7 @@
  * デバッグモードフラグ
  * 本番環境では false に設定することを推奨
  */
-export const DEBUG = true;
+export const DEBUG = process.env.NODE_ENV !== 'production';
 
 /**
  * バックグラウンド用デバッグロガー

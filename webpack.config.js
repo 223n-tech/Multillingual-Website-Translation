@@ -4,6 +4,7 @@ import fs from 'fs';
 import CopyPlugin from 'copy-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import webpack from 'webpack';
 
 // ESモジュールで__dirnameを使用するための設定
 const __filename = fileURLToPath(import.meta.url);
@@ -37,18 +38,35 @@ const versionWithBuild = `${version}.${buildNumber}`;
 console.log(`Building version: ${versionWithBuild} (${buildDate})`);
 
 // ビルド情報ファイルを生成
-const buildInfoContent = `
-export const BUILD_INFO = {
+const buildInfoContent = `export const BUILD_INFO = {
   version: '${version}',
   buildNumber: ${buildNumber},
   fullVersion: '${versionWithBuild}',
-  buildDate: '${buildDate}'
+  buildDate: '${buildDate}',
 };
 `;
 
 // buildInfo.tsファイルを作成
 const buildInfoPath = path.resolve(__dirname, 'src/utils/buildInfo.ts');
 fs.writeFileSync(buildInfoPath, buildInfoContent, 'utf8');
+
+// ビルド情報のJSファイルを生成
+const buildInfoRuntimeTemplate = fs.readFileSync(
+  path.resolve(__dirname, 'src/utils/buildInfoRuntime.js.template'),
+  'utf8',
+);
+
+// テンプレート内の変数を置換
+const buildInfoRuntimeContent = buildInfoRuntimeTemplate
+  .replace(/<%- version %>/g, version)
+  .replace(/<%- buildNumber %>/g, buildNumber.toString())
+  .replace(/<%- versionWithBuild %>/g, versionWithBuild)
+  .replace(/<%- buildDate %>/g, buildDate);
+
+// 出力ディレクトリにファイルを書き込み
+const buildInfoRuntimePath = path.resolve(__dirname, 'dist/buildInfoRuntime.js');
+fs.mkdirSync(path.dirname(buildInfoRuntimePath), { recursive: true });
+fs.writeFileSync(buildInfoRuntimePath, buildInfoRuntimeContent, 'utf8');
 
 export default {
   entry: {
@@ -88,18 +106,29 @@ export default {
     }),
     new CopyPlugin({
       patterns: [
-        { 
-          from: 'src/manifest.json', 
+        {
+          from: 'src/manifest.json',
           to: 'manifest.json',
           transform(content) {
             // マニフェストファイルのバージョンを更新
             const manifestJson = JSON.parse(content.toString());
             manifestJson.version = versionWithBuild;
             return JSON.stringify(manifestJson, null, 2);
-          }
+          },
         },
         { from: 'src/assets', to: 'assets', noErrorOnMissing: true },
-        // Add other assets like icons that should be copied to the dist folder
+        {
+          from: 'src/utils/buildInfoRuntime.js.template',
+          to: 'buildInfoRuntime.js',
+          transform(content) {
+            return content
+              .toString()
+              .replace(/<%- version %>/g, version)
+              .replace(/<%- buildNumber %>/g, buildNumber.toString())
+              .replace(/<%- versionWithBuild %>/g, versionWithBuild)
+              .replace(/<%- buildDate %>/g, buildDate);
+          },
+        },
       ],
     }),
     new HtmlWebpackPlugin({
@@ -109,8 +138,8 @@ export default {
       // HTMLにバージョン情報を注入
       templateParameters: {
         version: versionWithBuild,
-        buildDate: buildDate
-      }
+        buildDate: buildDate,
+      },
     }),
     new HtmlWebpackPlugin({
       template: './src/options/options.html',
@@ -118,8 +147,9 @@ export default {
       chunks: ['options'],
       templateParameters: {
         version: versionWithBuild,
-        buildDate: buildDate
-      }
+        buildDate: buildDate,
+      },
+      inject: 'body',
     }),
     new HtmlWebpackPlugin({
       template: './src/options/entry-manager/entry-manager.html',
@@ -127,8 +157,8 @@ export default {
       chunks: ['entry-manager'],
       templateParameters: {
         version: versionWithBuild,
-        buildDate: buildDate
-      }
+        buildDate: buildDate,
+      },
     }),
     // ビルド情報をHTML内に埋め込むためのプラグイン
     {
@@ -139,14 +169,17 @@ export default {
             (data, cb) => {
               data.html = data.html.replace(
                 '</body>',
-                `<script>window.BUILD_INFO = { version: "${version}", buildNumber: ${buildNumber}, fullVersion: "${versionWithBuild}", buildDate: "${buildDate}" };</script></body>`
+                `<script>window.BUILD_INFO = { version: "${version}", buildNumber: ${buildNumber}, fullVersion: "${versionWithBuild}", buildDate: "${buildDate}" };</script></body>`,
               );
               cb(null, data);
-            }
+            },
           );
         });
-      }
-    }
+      },
+    },
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    }),
   ],
   devtool: 'source-map',
 };
