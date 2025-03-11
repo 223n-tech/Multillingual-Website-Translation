@@ -6,6 +6,22 @@ import { EntryListManager } from './entry-list-manager';
 import { EntryFormManager } from './entry-form-manager';
 import { RegexTestManager } from './regex-test-manager';
 import { EntryDetailManager } from './entry-detail-manager';
+import {
+  parseGitHubRepoUrl,
+  buildGitHubApiUrl,
+  getGitHubFileSha,
+  updateGitHubFile,
+  getWebUrlFromRawUrl,
+  GitHubRepoInfo,
+} from '../../utils/github-utils';
+
+/**
+ * 保存オプション
+ */
+export interface SaveOptions {
+  type: 'download' | 'github';
+  commitMessage: string;
+}
 
 /**
  * 独立したエントリー管理ページ用のコントローラー
@@ -533,7 +549,7 @@ export class EntryManagerController {
   /**
    * エントリーの保存処理
    */
-  private handleSaveEntries(): void {
+  private async handleSaveEntries(): Promise<void> {
     if (!this.currentTranslationData || !this.currentDomainSettings) {
       alert('保存するデータがありません');
       return;
@@ -546,31 +562,614 @@ export class EntryManagerController {
         noRefs: true, // 参照を使用しない
       });
 
-      // バックグラウンドスクリプトに保存リクエストを送信
-      chrome.runtime.sendMessage(
-        {
-          type: 'saveTranslationData',
-          domain: this.currentDomainSettings.domain,
-          yaml: yamlData,
-        },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            alert(`保存に失敗しました: ${chrome.runtime.lastError.message}`);
-            return;
+      // 保存オプションを選択するダイアログを表示
+      const saveOptions = await this.showSaveOptionsDialog();
+
+      if (!saveOptions) {
+        // キャンセルの場合
+        return;
+      }
+
+      // オプションに応じた処理を実行
+      if (saveOptions.type === 'download') {
+        // ダウンロード用ファイル名を設定
+        const fileName = this.getSaveFileName();
+
+        // YAMLファイルをダウンロード
+        this.downloadYamlFile(yamlData, fileName);
+
+        alert(
+          '翻訳ファイルをダウンロードしました。このファイルをGitHubリポジトリに手動でアップロードしてください。',
+        );
+      } else if (saveOptions.type === 'github') {
+        // GitHubリポジトリに直接保存
+        const success = await this.saveToGitHub(yamlData, saveOptions.commitMessage);
+
+        if (success) {
+          alert('翻訳データをGitHubリポジトリに保存しました。');
+          // 保存後に現在のYAMLデータを更新
+          this.currentTranslationYaml = yamlData;
+        } else {
+          alert('GitHubリポジトリへの保存に失敗しました。');
+        }
+      }
+    } catch (error) {
+      console.error('翻訳エントリーの保存に失敗しました:', error);
+      uiDebugLog('翻訳エントリー保存エラー', error);
+      alert(
+        `翻訳エントリーの保存に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * 保存オプションの選択ダイアログを表示
+   */
+  private showSaveOptionsDialog(): Promise<SaveOptions | null> {
+    return new Promise((resolve) => {
+      // ダイアログを作成
+      const dialogHTML = `
+    <div class="save-dialog-overlay">
+      <div class="save-dialog">
+        <h3>保存方法を選択</h3>
+        <div class="save-options">
+          <div class="save-option">
+            <input type="radio" name="save-type" id="save-download" value="download" checked>
+            <label for="save-download">YAMLファイルとしてダウンロード</label>
+            <p class="option-description">翻訳データをYAMLファイルとしてダウンロードします。その後、GitHubリポジトリに手動でアップロードする必要があります。</p>
+          </div>
+          <div class="save-option">
+            <input type="radio" name="save-type" id="save-github" value="github">
+            <label for="save-github">GitHubリポジトリに直接保存 (ベータ機能)</label>
+            <p class="option-description">翻訳データをGitHubリポジトリに直接保存します。この機能はベータ版です。</p>
+            <div class="github-options" style="display: none;">
+              <div class="form-group">
+                <label for="commit-message">コミットメッセージ:</label>
+                <input type="text" id="commit-message" value="翻訳エントリーの更新">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dialog-buttons">
+          <button id="save-dialog-confirm" class="btn primary">保存</button>
+          <button id="save-dialog-cancel" class="btn">キャンセル</button>
+        </div>
+      </div>
+    </div>
+    `;
+
+      // ダイアログのスタイル
+      const dialogStyle = document.createElement('style');
+      dialogStyle.textContent = `
+      .save-dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .save-dialog {
+        background-color: white;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 24px;
+        width: 500px;
+        max-width: 90%;
+      }
+      .save-options {
+        margin: 20px 0;
+      }
+      .save-option {
+        margin-bottom: 16px;
+        padding: 12px;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+      }
+      .save-option input[type="radio"] {
+        margin-right: 8px;
+      }
+      .save-option label {
+        font-weight: 600;
+      }
+      .option-description {
+        margin-top: 8px;
+        font-size: 14px;
+        color: #586069;
+      }
+      .github-options {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px dashed #e1e4e8;
+      }
+      .dialog-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 20px;
+      }
+    `;
+
+      // ダイアログをDOMに追加
+      document.body.appendChild(dialogStyle);
+      const dialogContainer = document.createElement('div');
+      dialogContainer.innerHTML = dialogHTML;
+      document.body.appendChild(dialogContainer);
+
+      // イベントリスナーを設定
+      const saveGithubRadio = document.getElementById('save-github') as HTMLInputElement;
+      const githubOptions = document.querySelector('.github-options') as HTMLDivElement;
+      const commitMessageInput = document.getElementById('commit-message') as HTMLInputElement;
+      const confirmButton = document.getElementById('save-dialog-confirm') as HTMLButtonElement;
+      const cancelButton = document.getElementById('save-dialog-cancel') as HTMLButtonElement;
+
+      // GitHubオプションの表示/非表示
+      saveGithubRadio.addEventListener('change', () => {
+        githubOptions.style.display = saveGithubRadio.checked ? 'block' : 'none';
+      });
+
+      // 保存ボタンのクリックイベント
+      confirmButton.addEventListener('click', () => {
+        const saveType = (
+          document.querySelector('input[name="save-type"]:checked') as HTMLInputElement
+        ).value;
+        const commitMessage = commitMessageInput.value.trim() || '翻訳エントリーの更新';
+
+        // ダイアログを閉じる
+        document.body.removeChild(dialogContainer);
+        document.body.removeChild(dialogStyle);
+
+        resolve({
+          type: saveType as 'download' | 'github',
+          commitMessage: commitMessage,
+        });
+      });
+
+      // キャンセルボタンのクリックイベント
+      cancelButton.addEventListener('click', () => {
+        // ダイアログを閉じる
+        document.body.removeChild(dialogContainer);
+        document.body.removeChild(dialogStyle);
+        resolve(null);
+      });
+    });
+  }
+
+  /**
+   * 保存用のファイル名を取得
+   */
+  private getSaveFileName(): string {
+    if (!this.currentDomainSettings) {
+      return 'translation-config.yml';
+    }
+
+    // リポジトリURLからファイル名を抽出
+    const urlParts = this.currentDomainSettings.repository.split('/');
+    const fileName = urlParts[urlParts.length - 1] || 'translation-config.yml';
+
+    return fileName;
+  }
+
+  /**
+   * YAMLファイルをダウンロード
+   */
+  private downloadYamlFile(yamlContent: string, fileName: string): void {
+    const blob = new Blob([yamlContent], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+
+    // クリーンアップ
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 100);
+  }
+
+  /**
+   * GitHubリポジトリに直接保存（拡張版）
+   */
+  private async saveToGitHub(yamlContent: string, commitMessage: string): Promise<boolean> {
+    try {
+      // GitHub APIトークンが必要
+      const accessToken = await this.getGitHubAccessToken();
+      if (!accessToken) {
+        // トークンが取得できない場合はダウンロード処理にフォールバック
+        alert(
+          'GitHub APIトークンが設定されていないため、GitHubリポジトリに直接保存できません。YAMLファイルをダウンロードします。',
+        );
+        const fileName = this.getSaveFileName();
+        this.downloadYamlFile(yamlContent, fileName);
+        return false;
+      }
+
+      // 保存中ダイアログを表示
+      this.showSavingDialog();
+
+      // リポジトリ情報を解析
+      const repoInfo = this.parseRepositoryUrl();
+      if (!repoInfo) {
+        this.hideSavingDialog();
+        alert('有効なGitHubリポジトリURLを指定してください。');
+        return false;
+      }
+
+      // GitHub APIのURLを構築
+      const apiUrl = `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/contents/${repoInfo.path}`;
+
+      // ファイルの現在のSHAを取得
+      let fileSha: string | null = null;
+      try {
+        const fileInfo = await this.getGitHubFileSha(apiUrl, accessToken);
+        fileSha = fileInfo?.sha || null;
+      } catch (error) {
+        console.warn('既存ファイルのSHA取得に失敗、新規ファイルとして作成します:', error);
+      }
+
+      // GitHub APIでファイルを更新
+      const success = await this.updateGitHubFile(
+        apiUrl,
+        yamlContent,
+        fileSha,
+        commitMessage,
+        repoInfo.branch,
+        accessToken,
+      );
+
+      // 保存中ダイアログを非表示
+      this.hideSavingDialog();
+
+      if (success) {
+        // 保存成功ダイアログを表示
+        this.showSaveSuccessDialog(repoInfo);
+
+        // 保存成功後、現在のYAMLデータを更新
+        this.currentTranslationYaml = yamlContent;
+        return true;
+      } else {
+        // 保存失敗ダイアログを表示
+        this.showSaveErrorDialog();
+        return false;
+      }
+    } catch (error) {
+      // 保存中ダイアログを非表示
+      this.hideSavingDialog();
+
+      console.error('GitHubリポジトリへの保存に失敗しました:', error);
+      uiDebugLog('GitHubリポジトリ保存エラー', error);
+
+      // エラーダイアログを表示
+      this.showSaveErrorDialog();
+      return false;
+    }
+  }
+
+  /**
+   * GitHub APIトークンを取得
+   * 注: 実際の実装では、セキュアにトークンを管理する必要があります
+   */
+  private async getGitHubAccessToken(): Promise<string | null> {
+    return new Promise((resolve) => {
+      // APIトークン入力ダイアログを表示
+      const dialogHTML = `
+    <div class="token-dialog-overlay">
+      <div class="token-dialog">
+        <h3>GitHub APIトークン</h3>
+        <p>GitHubリポジトリに変更を保存するには、アクセストークンが必要です。</p>
+        <p class="note">注: トークンは<strong>repo</strong>スコープを持つ必要があります。<a href="https://github.com/settings/tokens" target="_blank">GitHubでトークンを作成</a></p>
+        <div class="form-group">
+          <label for="github-token">GitHub APIトークン:</label>
+          <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="remember-token">
+          <label for="remember-token">このブラウザでトークンを記憶する (注: 安全なデバイスでのみ使用してください)</label>
+        </div>
+        <div class="dialog-buttons">
+          <button id="token-dialog-confirm" class="btn primary">OK</button>
+          <button id="token-dialog-cancel" class="btn">キャンセル</button>
+        </div>
+      </div>
+    </div>
+    `;
+
+      // ダイアログをDOMに追加
+      const dialogContainer = document.createElement('div');
+      dialogContainer.innerHTML = dialogHTML;
+      document.body.appendChild(dialogContainer);
+
+      // イベントリスナーを設定
+      const tokenInput = document.getElementById('github-token') as HTMLInputElement;
+      const rememberCheckbox = document.getElementById('remember-token') as HTMLInputElement;
+      const confirmButton = document.getElementById('token-dialog-confirm') as HTMLButtonElement;
+      const cancelButton = document.getElementById('token-dialog-cancel') as HTMLButtonElement;
+
+      // 保存済みのトークンがあれば読み込み
+      chrome.storage.local.get('githubToken', (result) => {
+        if (result.githubToken) {
+          tokenInput.value = result.githubToken;
+          rememberCheckbox.checked = true;
+        }
+      });
+
+      // OKボタンのクリックイベント
+      confirmButton.addEventListener('click', () => {
+        const token = tokenInput.value.trim();
+        if (token) {
+          // トークンを記憶するかどうか
+          if (rememberCheckbox.checked) {
+            chrome.storage.local.set({ githubToken: token });
           }
 
-          if (response && response.success) {
-            alert('翻訳エントリーを保存しました');
-            this.currentTranslationYaml = yamlData;
-          } else {
-            alert(
-              `保存に失敗しました: ${response && response.error ? response.error : '不明なエラー'}`,
-            );
-          }
-        },
-      );
+          // ダイアログを閉じる
+          document.body.removeChild(dialogContainer);
+          resolve(token);
+        } else {
+          alert('有効なGitHub APIトークンを入力してください。');
+        }
+      });
+
+      // キャンセルボタンのクリックイベント
+      cancelButton.addEventListener('click', () => {
+        // ダイアログを閉じる
+        document.body.removeChild(dialogContainer);
+        resolve(null);
+      });
+    });
+  }
+
+  /**
+   * リポジトリURLを解析
+   */
+  private parseRepositoryUrl(): GitHubRepoInfo | null {
+    if (!this.currentDomainSettings || !this.currentDomainSettings.repository) {
+      return null;
+    }
+
+    // リポジトリURLを解析
+    try {
+      const url = new URL(this.currentDomainSettings.repository);
+
+      // GitHub Raw URLであるか確認
+      if (url.hostname !== 'raw.githubusercontent.com') {
+        return null;
+      }
+
+      // URLパスを分解 (/username/repo/branch/path/to/file.yml)
+      const pathParts = url.pathname.split('/').filter((part) => part.length > 0);
+
+      if (pathParts.length < 4) {
+        return null; // 有効なGitHub Raw URLではない
+      }
+
+      const owner = pathParts[0];
+      const repo = pathParts[1];
+      const branch = pathParts[2];
+
+      // ファイル名を取得
+      const filename = pathParts[pathParts.length - 1];
+
+      // ファイルパスを構築 (owner/repo/branchを除く)
+      const path = pathParts.slice(3).join('/');
+
+      return {
+        owner,
+        repo,
+        branch,
+        path,
+        filename,
+      };
     } catch (error) {
-      alert(`YAMLの生成に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('GitHubリポジトリURL解析エラー:', error);
+      return null;
+    }
+  }
+
+  /**
+   * GitHub APIを使用してファイルのSHAを取得
+   */
+  private async getGitHubFileSha(
+    apiUrl: string,
+    accessToken: string,
+  ): Promise<{ sha: string } | null> {
+    try {
+      const response = await fetch(apiUrl, {
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+          Authorization: `token ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // ファイルが存在しないのは問題なし
+          return null;
+        }
+        throw new Error(`GitHub API エラー: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return { sha: data.sha };
+    } catch (error) {
+      console.error('GitHub APIファイル情報取得エラー:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * GitHub APIを使用してファイルを更新
+   */
+  private async updateGitHubFile(
+    apiUrl: string,
+    content: string,
+    sha: string | null,
+    message: string,
+    branch: string,
+    accessToken: string,
+  ): Promise<boolean> {
+    try {
+      // コンテンツをBase64エンコード
+      const encodedContent = btoa(unescape(encodeURIComponent(content)));
+
+      // リクエストペイロードを作成
+      const payload: Record<string, unknown> = {
+        message,
+        content: encodedContent,
+        branch,
+      };
+
+      // 既存ファイルを更新する場合はSHAを指定
+      if (sha) {
+        payload.sha = sha;
+      }
+
+      // GitHub APIリクエスト
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+          Authorization: `token ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          `GitHub API エラー: ${response.status} ${response.statusText} - ${errorData.message}`,
+        );
+      }
+
+      return true;
+    } catch (error) {
+      console.error('GitHub APIファイル更新エラー:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 保存成功ダイアログを表示
+   */
+  private showSaveSuccessDialog(repoInfo: GitHubRepoInfo): void {
+    const webUrl = `https://github.com/${repoInfo.owner}/${repoInfo.repo}/blob/${repoInfo.branch}/${repoInfo.path}`;
+
+    const dialogHTML = `
+  <div class="save-dialog-overlay">
+    <div class="save-dialog">
+      <div class="save-result">
+        <div class="icon success">✓</div>
+        <div class="message">GitHubリポジトリに保存しました</div>
+        <div class="description">
+          ファイルは正常にGitHubリポジトリに保存されました。
+        </div>
+        <a href="${webUrl}" target="_blank" class="btn primary">GitHubで確認する</a>
+      </div>
+      <div class="dialog-buttons">
+        <button id="success-close-btn" class="btn">閉じる</button>
+      </div>
+    </div>
+  </div>
+  `;
+
+    const dialogContainer = document.createElement('div');
+    dialogContainer.innerHTML = dialogHTML;
+    document.body.appendChild(dialogContainer);
+
+    // 閉じるボタンのクリックイベント
+    const closeButton = document.getElementById('success-close-btn');
+    if (closeButton) {
+      closeButton.addEventListener('click', () => {
+        document.body.removeChild(dialogContainer);
+      });
+    }
+  }
+
+  /**
+   * 保存エラーダイアログを表示
+   */
+  private showSaveErrorDialog(): void {
+    const dialogHTML = `
+  <div class="save-dialog-overlay">
+    <div class="save-dialog">
+      <div class="save-result">
+        <div class="icon error">✗</div>
+        <div class="message">GitHubリポジトリへの保存に失敗しました</div>
+        <div class="description">
+          エラーが発生したため、GitHubリポジトリへの保存に失敗しました。
+          代わりにYAMLファイルをダウンロードしますか？
+        </div>
+      </div>
+      <div class="dialog-buttons">
+        <button id="download-fallback-btn" class="btn primary">YAMLをダウンロード</button>
+        <button id="error-close-btn" class="btn">閉じる</button>
+      </div>
+    </div>
+  </div>
+  `;
+
+    const dialogContainer = document.createElement('div');
+    dialogContainer.innerHTML = dialogHTML;
+    document.body.appendChild(dialogContainer);
+
+    // ダウンロードボタンのクリックイベント
+    const downloadButton = document.getElementById('download-fallback-btn');
+    if (downloadButton) {
+      downloadButton.addEventListener('click', () => {
+        document.body.removeChild(dialogContainer);
+
+        if (this.currentTranslationData) {
+          const yamlContent = jsyaml.dump(this.currentTranslationData, {
+            lineWidth: -1,
+            noRefs: true,
+          });
+          const fileName = this.getSaveFileName();
+          this.downloadYamlFile(yamlContent, fileName);
+        }
+      });
+    }
+
+    // 閉じるボタンのクリックイベント
+    const closeButton = document.getElementById('error-close-btn');
+    if (closeButton) {
+      closeButton.addEventListener('click', () => {
+        document.body.removeChild(dialogContainer);
+      });
+    }
+  }
+
+  /**
+   * 保存中ダイアログを表示
+   */
+  private showSavingDialog(): void {
+    const dialogHTML = `
+    <div class="saving-dialog-overlay">
+      <div class="saving-dialog">
+        <div class="spinner"></div>
+        <p>GitHubリポジトリに保存中です...</p>
+      </div>
+    </div>
+  `;
+
+    const container = document.createElement('div');
+    container.id = 'saving-dialog-container';
+    container.innerHTML = dialogHTML;
+    document.body.appendChild(container);
+  }
+
+  /**
+   * 保存中ダイアログを非表示
+   */
+  private hideSavingDialog(): void {
+    const container = document.getElementById('saving-dialog-container');
+    if (container) {
+      document.body.removeChild(container);
     }
   }
 

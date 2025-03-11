@@ -20,7 +20,7 @@
   "author": "",
   "license": "MIT",
   "type": "module",
-  "buildNumber": 12,
+  "buildNumber": 14,
   "devDependencies": {
     "@eslint/config-array": "^0.19.2",
     "@eslint/object-schema": "^2.1.6",
