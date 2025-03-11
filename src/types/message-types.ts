@@ -32,6 +32,14 @@ export interface GetTranslationsMessage extends BaseMessage {
 }
 
 /**
+ * 翻訳YAML取得メッセージ
+ */
+export interface GetTranslationYamlMessage extends BaseMessage {
+  action: 'getTranslationYaml';
+  domain: string;
+}
+
+/**
  * 翻訳トグルメッセージ
  */
 export interface ToggleTranslationMessage extends BaseMessage {
@@ -46,6 +54,15 @@ export interface TranslationsResponse {
   success: boolean;
   translations?: string;
   contextMapping?: string;
+  error?: string;
+}
+
+/**
+ * 翻訳YAML取得レスポンス
+ */
+export interface TranslationYamlResponse {
+  success: boolean;
+  yaml?: string;
   error?: string;
 }
 

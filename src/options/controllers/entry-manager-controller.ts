@@ -302,17 +302,19 @@ export class EntryManagerController {
     return new Promise<void>((resolve, reject) => {
       chrome.runtime.sendMessage(
         {
-          type: 'getTranslationYaml',
+          action: 'getTranslationYaml',
           domain: this.currentDomainSettings?.domain,
         },
         (response) => {
           if (chrome.runtime.lastError) {
+            console.error('翻訳データ取得エラー:', chrome.runtime.lastError);
             reject(new Error(`翻訳データの取得に失敗: ${chrome.runtime.lastError.message}`));
             return;
           }
 
-          if (!response || !response.yaml) {
-            reject(new Error('翻訳データが見つかりません'));
+          if (!response || !response.success) {
+            console.error('翻訳データ取得失敗:', response?.error || '不明なエラー');
+            reject(new Error(response?.error || '翻訳データが見つかりません'));
             return;
           }
 

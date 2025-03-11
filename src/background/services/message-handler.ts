@@ -2,8 +2,10 @@ import { SettingsService } from './settings-service';
 import { TranslationService } from './translation-service';
 import {
   TranslationsResponse,
+  TranslationYamlResponse,
   GenericResponse,
   GetTranslationsMessage,
+  GetTranslationYamlMessage,
   ToggleTranslationMessage,
   BaseMessage,
   MessageResponseCallback,
@@ -44,6 +46,10 @@ export class MessageHandler {
 
       case 'toggleTranslation':
         this.handleToggleTranslation(message as ToggleTranslationMessage, sendResponse);
+        break;
+
+      case 'getTranslationYaml':
+        this.handleGetTranslationYaml(message as GetTranslationYamlMessage, sendResponse);
         break;
 
       default:
@@ -154,6 +160,44 @@ export class MessageHandler {
       debugLog('翻訳トグル成功');
     } catch (error) {
       console.error('翻訳トグルに失敗:', error);
+      sendResponse({
+        success: false,
+        error: error instanceof Error ? error.message : '不明なエラー',
+      });
+    }
+  }
+
+  /**
+   * 翻訳YAMLの取得
+   */
+  private async handleGetTranslationYaml(
+    message: GetTranslationYamlMessage,
+    sendResponse: (response: TranslationYamlResponse) => void,
+  ): Promise<void> {
+    try {
+      debugLog('翻訳YAMLデータ取得リクエスト:', message.domain);
+
+      const domainSettings = await this.settingsService.getDomainSettings(message.domain);
+
+      if (!domainSettings) {
+        sendResponse({
+          success: false,
+          error: `ドメイン ${message.domain} の翻訳設定が見つかりませんでした`,
+        });
+        return;
+      }
+
+      // 翻訳ファイルを取得
+      const yaml = await this.translationService.fetchTranslationFile(domainSettings.repository);
+
+      sendResponse({
+        success: true,
+        yaml,
+      });
+
+      debugLog('翻訳YAMLデータ取得成功');
+    } catch (error) {
+      console.error('翻訳YAMLデータの取得に失敗:', error);
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : '不明なエラー',

@@ -7,7 +7,7 @@ import { EntryManagerController } from '../controllers/entry-manager-controller'
  */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // URL パラメーターを解析
+    // URLパラメーターを解析
     const params = new URLSearchParams(window.location.search);
     const domainIndex = params.get('index');
 
@@ -28,10 +28,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // エントリーマネージャーコントローラーを初期化
     const controller = new EntryManagerController(index);
-    await controller.initialize();
+    try {
+      await controller.initialize();
+    } catch (error) {
+      console.error('コントローラー初期化エラー:', error);
+      showErrorMessage(
+        `コントローラー初期化エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   } catch (error) {
-    console.error('エントリーマネージャーの初期化に失敗:', error);
-    showErrorMessage(error instanceof Error ? error.message : '不明なエラー');
+    console.error('エントリー管理ページ初期化エラー:', error);
+    showErrorMessage(
+      `エントリー管理ページの初期化に失敗: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 });
 
