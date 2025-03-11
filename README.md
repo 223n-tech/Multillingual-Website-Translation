@@ -92,6 +92,10 @@ domains:
   make clean      : ビルドディレクトリを削除します
   make clean-all  : ビルドとdistディレクトリを削除します
   make help       : このヘルプを表示します
+  make version    : 現在のバージョン情報を表示します
+  make bump-patch : パッチバージョンを更新します
+  make bump-minor : マイナーバージョンを更新します
+  make bump-major : メジャーバージョンを更新します
 ```
 
 ### ベータ版について
