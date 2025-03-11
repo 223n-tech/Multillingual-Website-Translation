@@ -381,6 +381,8 @@ export class DomObserver {
             childElements.forEach((el) => elements.push(el));
           } catch (error) {
             // querySelectorエラーは無視
+            contentDebugLog('querySelectorエラーが発生しましたが、無視します。');
+            contentDebugLog(error);
           }
         }
       });
@@ -418,6 +420,8 @@ export class DomObserver {
             navElements.forEach((el) => elements.push(el));
           } catch (error) {
             // querySelectorエラーは無視
+            contentDebugLog('querySelectorエラーが発生しましたが、無視します。');
+            contentDebugLog(error);
           }
         }
       });

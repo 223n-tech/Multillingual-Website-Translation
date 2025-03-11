@@ -1,17 +1,20 @@
+/// <reference types="chrome" />
+
 import * as jsyaml from 'js-yaml';
 import { uiDebugLog } from '../../utils/debug';
 import { AppSettings, DomainSettings } from '../../types/settings';
-import { TranslationData, TranslationEntry } from '../../types/translation';
+// import { TranslationData, TranslationEntry } from '../../types/translation';
+import { TranslationData } from '../../types/translation';
 import { EntryListManager } from './entry-list-manager';
 import { EntryFormManager } from './entry-form-manager';
 import { RegexTestManager } from './regex-test-manager';
 import { EntryDetailManager } from './entry-detail-manager';
 import {
-  parseGitHubRepoUrl,
-  buildGitHubApiUrl,
-  getGitHubFileSha,
-  updateGitHubFile,
-  getWebUrlFromRawUrl,
+  // parseGitHubRepoUrl,
+  // buildGitHubApiUrl,
+  // getGitHubFileSha,
+  // updateGitHubFile,
+  // getWebUrlFromRawUrl,
   GitHubRepoInfo,
 } from '../../utils/github-utils';
 
@@ -266,7 +269,7 @@ export class EntryManagerController {
    */
   private async loadSettings(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      chrome.storage.local.get('settings', (result) => {
+      chrome.storage.local.get('settings', (result: { settings?: AppSettings }) => {
         if (chrome.runtime.lastError) {
           reject(new Error(`設定の読み込みに失敗: ${chrome.runtime.lastError.message}`));
           return;
@@ -321,7 +324,7 @@ export class EntryManagerController {
           action: 'getTranslationYaml',
           domain: this.currentDomainSettings?.domain,
         },
-        (response) => {
+        (response: { success: boolean; yaml: string; error: string | null }) => {
           if (chrome.runtime.lastError) {
             console.error('翻訳データ取得エラー:', chrome.runtime.lastError);
             reject(new Error(`翻訳データの取得に失敗: ${chrome.runtime.lastError.message}`));
@@ -891,7 +894,7 @@ export class EntryManagerController {
       const cancelButton = document.getElementById('token-dialog-cancel') as HTMLButtonElement;
 
       // 保存済みのトークンがあれば読み込み
-      chrome.storage.local.get('githubToken', (result) => {
+      chrome.storage.local.get('githubToken', (result: { githubToken?: string }) => {
         if (result.githubToken) {
           tokenInput.value = result.githubToken;
           rememberCheckbox.checked = true;

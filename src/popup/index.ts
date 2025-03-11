@@ -1,5 +1,5 @@
 import './popup.css';
-import { uiDebugLog } from '../utils/debug';
+// import { uiDebugLog } from '../utils/debug';
 import { PopupController } from './popup-controller';
 
 // DOMのロードが完了したらポップアップコントローラを初期化

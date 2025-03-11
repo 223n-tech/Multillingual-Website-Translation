@@ -1,5 +1,6 @@
-import { contentDebugLog } from '../../utils/debug';
-import { ContextMappingData, RegexContextConfig } from '../../types/context';
+// import { contentDebugLog } from '../../utils/debug';
+// import { ContextMappingData, RegexContextConfig } from '../../types/context';
+import { ContextMappingData } from '../../types/context';
 
 /**
  * コンテキスト検出サービス

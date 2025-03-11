@@ -14,7 +14,8 @@
     },
     "outDir": "dist",
     "typeRoots": ["./node_modules/@types", "./src/types"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["chrome", "js-yaml", "node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

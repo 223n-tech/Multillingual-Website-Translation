@@ -64,7 +64,7 @@ export class EntryListManager {
     contextFilter: string,
     regexFilter: boolean,
   ): TranslationEntry[] {
-    return entries.filter((entry, index) => {
+    return entries.filter((entry, _index) => {
       // 検索テキストのフィルタリング
       const matchesSearch =
         searchText === '' ||
@@ -138,7 +138,7 @@ export class EntryListManager {
   private createEntryCard(
     entry: TranslationEntry,
     originalIndex: number,
-    filteredIndex: number,
+    _filteredIndex: number,
   ): HTMLDivElement {
     const card = document.createElement('div');
     card.className = 'entry-card';

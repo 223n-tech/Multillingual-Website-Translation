@@ -1,3 +1,5 @@
+/// <reference types="chrome" />
+
 import { uiDebugLog } from '../../utils/debug';
 import { DomainSettings } from '../../types/settings';
 import { OptionsController } from './options-controller';
@@ -275,9 +277,8 @@ export class DomainController {
    */
   private handleManageEntriesClick(index: number): void {
     // 翻訳エントリー管理ページを別タブで開く
-    const settings = this.optionsController.getSettings();
-    const domain = settings.domains[index];
-
+    // const settings = this.optionsController.getSettings();
+    // const domain = settings.domains[index];
     chrome.tabs.create({
       url: `entry-manager.html?index=${index}`,
     });

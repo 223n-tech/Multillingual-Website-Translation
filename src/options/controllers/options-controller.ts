@@ -1,5 +1,8 @@
+/// <reference types="chrome" />
+
 import { uiDebugLog } from '../../utils/debug';
-import { AppSettings, DomainSettings, DEFAULT_SETTINGS } from '../../types/settings';
+// import { AppSettings, DomainSettings, DEFAULT_SETTINGS } from '../../types/settings';
+import { AppSettings, DEFAULT_SETTINGS } from '../../types/settings';
 import { DomainController } from './domain-controller';
 import { ImportExportController } from './import-export-controller';
 
