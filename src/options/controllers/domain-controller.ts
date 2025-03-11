@@ -46,8 +46,11 @@ export class DomainController {
    */
   public renderDomainList(domains: DomainSettings[]): void {
     if (!this.domainList) {
-      console.error('DOMがまだ読み込まれていません: domainList要素が見つかりません');
-      return;
+      this.domainList = document.getElementById('domain-list') as HTMLDivElement;
+      if (!this.domainList) {
+        console.error('DOMがまだ読み込まれていません: domainList要素が見つかりません');
+        return;
+      }
     }
 
     this.domainList.innerHTML = '';
