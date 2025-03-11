@@ -534,3 +534,79 @@
     transform: rotate(360deg);
   }
 }
+
+/* フッター固定用のスタイル追加 */
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+main.content-area {
+  flex: 1;
+  overflow: hidden; /* メインコンテンツエリアの溢れを防止 */
+  display: flex;
+  gap: 20px;
+}
+
+.left-panel {
+  flex: 1;
+  min-width: 300px;
+  max-width: 400px;
+  max-height: calc(100vh - 200px); /* ヘッダーとフッターの高さを考慮 */
+  overflow-y: auto; /* 左パネルがスクロール可能に */
+  border-right: 1px solid #e1e4e8;
+  padding-right: 16px;
+}
+
+.right-panel {
+  flex: 2;
+  min-width: 300px;
+  padding: 0 8px;
+  max-height: calc(100vh - 200px); /* ヘッダーとフッターの高さを考慮 */
+  overflow-y: auto; /* 右パネルもスクロール可能に */
+}
+
+/* エントリーリスト */
+.entry-list {
+  overflow-y: visible; /* 親要素の左パネルがスクロール可能なので、ここではオーバーフローを許可 */
+}
+
+footer.footer {
+  margin-top: auto; /* フッターを下部に押し出す */
+  padding: 16px 0;
+  border-top: 1px solid #e1e4e8;
+}
+
+/* スマホ対応 */
+@media (max-width: 768px) {
+  main.content-area {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    max-width: 100%;
+    max-height: none;
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .left-panel {
+    border-bottom: 1px solid #e1e4e8;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    max-height: 400px; /* スマホでの左パネルの最大高さを制限 */
+  }
+}
