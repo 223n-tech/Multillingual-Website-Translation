@@ -192,14 +192,24 @@ export class TranslationEngine {
     const text = node.textContent?.trim();
     if (!text) return false;
 
+    // 親が処理済みである場合や特定の要素の場合はスキップ
+    const parentElement = node.parentElement;
+    if (
+      !parentElement ||
+      this.processedElements.has(node) ||
+      this.SKIP_TAGS.includes(parentElement.tagName.toUpperCase())
+    ) {
+      return false;
+    }
+
+    // 翻訳処理済みとしてマーク
+    this.processedElements.add(node);
+
     const originalText = node.textContent!;
     let newText = originalText;
     let translated = false;
 
     // 親要素のコンテキストを判定
-    const parentElement = node.parentElement;
-    if (!parentElement) return false;
-
     const elementContext = this.contextDetector.determineElementContext(parentElement);
 
     // 1. コンテキスト指定の翻訳を試みる

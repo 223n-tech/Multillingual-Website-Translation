@@ -14,6 +14,8 @@ export class DomObserver {
   private observer: MutationObserver | null = null;
   private isTranslating = false;
   private isGitHubDomain = false;
+  private pendingMutations: MutationRecord[] = [];
+  private debounceTimer: number | null = null;
 
   constructor(
     translationEngine: TranslationEngine,
@@ -69,66 +71,108 @@ export class DomObserver {
       this.observer = null;
       contentDebugLog('MutationObserver切断完了');
     }
+
+    // タイマーがあれば解除
+    if (this.debounceTimer !== null) {
+      window.clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+
+    // 保留中のミューテーションをクリア
+    this.pendingMutations = [];
   }
 
   /**
    * DOM変更イベントハンドラ
    */
   private handleMutations(mutations: MutationRecord[]): void {
-    if (this.isTranslating) return;
+    // 既に翻訳処理中の場合は、ミューテーションを保留リストに追加
+    if (this.isTranslating) {
+      // 保留中のミューテーションに追加（重複を避けるために連結）
+      this.pendingMutations = this.pendingMutations.concat(mutations);
+      return;
+    }
 
+    // 翻訳処理中フラグを設定
     this.isTranslating = true;
-    let translatedCount = 0;
 
-    try {
-      contentDebugLog('DOM変更検出', mutations.length + '個の変更');
+    // 既存のタイマーがあればクリア
+    if (this.debounceTimer !== null) {
+      window.clearTimeout(this.debounceTimer);
+    }
 
-      // デバウンス処理（短時間の連続変更をまとめて処理）
-      setTimeout(() => {
-        try {
-          if (this.isGitHubDomain) {
-            translatedCount += this.handleGitHubDynamicChanges(mutations);
-          }
+    // すべての変更をまとめて処理するためのデバウンス
+    this.debounceTimer = window.setTimeout(() => {
+      try {
+        // 現在のミューテーションと保留中のミューテーションを合わせて処理
+        const allMutations = [...mutations, ...this.pendingMutations];
+        this.pendingMutations = []; // 保留リストをクリア
 
-          // 通常の変更を処理
-          mutations.forEach((mutation) => {
-            // 追加されたノードを処理
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) {
-                translatedCount += this.translationEngine.applyTranslations(node);
-              }
-            });
+        contentDebugLog('DOM変更検出', allMutations.length + '個の変更');
 
-            // 属性変更を処理（クラス変更による表示/非表示など）
+        // 自己を呼び出す変更（翻訳自体による変更）を無視するためのセット
+        const processedNodes = new Set<Node>();
+        let translatedCount = 0;
+
+        // GitHubドメインの場合は特殊処理
+        if (this.isGitHubDomain) {
+          translatedCount += this.handleGitHubDynamicChanges(allMutations);
+        }
+
+        // 通常の変更を処理
+        allMutations.forEach((mutation) => {
+          // 追加されたノードを処理
+          mutation.addedNodes.forEach((node) => {
             if (
-              mutation.type === 'attributes' &&
-              mutation.target.nodeType === Node.ELEMENT_NODE &&
-              mutation.attributeName !== 'data-content'
+              (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) &&
+              !processedNodes.has(node)
             ) {
-              // data-contentは別途処理済み
-              translatedCount += this.translationEngine.applyTranslations(mutation.target);
-            }
-
-            // テキスト変更を処理
-            if (mutation.type === 'characterData' && mutation.target.nodeType === Node.TEXT_NODE) {
-              translatedCount += this.translationEngine.applyTranslations(mutation.target);
+              processedNodes.add(node);
+              translatedCount += this.translationEngine.applyTranslations(node);
             }
           });
 
-          if (translatedCount > 0) {
-            contentDebugLog(`DOM変更に対して${translatedCount}個の翻訳を適用`);
+          // 属性変更を処理（クラス変更による表示/非表示など）
+          if (
+            mutation.type === 'attributes' &&
+            mutation.target.nodeType === Node.ELEMENT_NODE &&
+            mutation.attributeName !== 'data-content' &&
+            !processedNodes.has(mutation.target)
+          ) {
+            // data-contentは別途処理済み
+            processedNodes.add(mutation.target);
+            translatedCount += this.translationEngine.applyTranslations(mutation.target);
           }
-        } catch (error) {
-          console.error('デバウンス処理中のエラー:', error);
-        } finally {
-          this.isTranslating = false;
+
+          // テキスト変更を処理
+          if (
+            mutation.type === 'characterData' &&
+            mutation.target.nodeType === Node.TEXT_NODE &&
+            !processedNodes.has(mutation.target)
+          ) {
+            processedNodes.add(mutation.target);
+            translatedCount += this.translationEngine.applyTranslations(mutation.target);
+          }
+        });
+
+        if (translatedCount > 0) {
+          contentDebugLog(`DOM変更に対して${translatedCount}個の翻訳を適用`);
         }
-      }, 100); // 100msのデバウンス時間
-    } catch (error) {
-      console.error('MutationObserver処理エラー:', error);
-      contentDebugLog('MutationObserver処理例外', error);
-      this.isTranslating = false;
-    }
+      } catch (error) {
+        console.error('デバウンス処理中のエラー:', error);
+      } finally {
+        // 処理が完了したら翻訳中フラグを解除
+        this.isTranslating = false;
+        this.debounceTimer = null;
+
+        // 保留中のミューテーションがあれば処理
+        if (this.pendingMutations.length > 0) {
+          const pendingMutationsCopy = [...this.pendingMutations];
+          this.pendingMutations = [];
+          this.handleMutations(pendingMutationsCopy);
+        }
+      }
+    }, 100); // 100msのデバウンス時間
   }
 
   /**

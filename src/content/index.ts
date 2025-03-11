@@ -15,6 +15,8 @@ class ContentScript {
   private translationService: ContentTranslationService;
   private messageHandler: ContentMessageHandler;
   private initialized = false;
+  private translationStarted = false;
+  private domLoadedHandled = false;
 
   constructor() {
     this.translationService = new ContentTranslationService();
@@ -60,7 +62,10 @@ class ContentScript {
       document.addEventListener('DOMContentLoaded', this.onDOMContentLoaded.bind(this));
     } else {
       // すでにDOMがロード済みなら直ちに実行
-      this.onDOMContentLoaded();
+      // ただし短いタイムアウトを設定して他のスクリプトが先に実行されるようにする
+      setTimeout(() => {
+        this.onDOMContentLoaded();
+      }, 50);
     }
 
     this.initialized = true;
@@ -71,17 +76,29 @@ class ContentScript {
    * DOMContentLoadedイベントハンドラ
    */
   private onDOMContentLoaded(): void {
+    // 重複実行防止
+    if (this.domLoadedHandled) {
+      return;
+    }
+
+    this.domLoadedHandled = true;
     contentDebugLog('DOM読み込み完了、翻訳開始');
 
     // 現在のドメインで翻訳を開始
     const domain = window.location.hostname;
-    this.translationService.startTranslation(domain);
 
-    // 遅延再翻訳（動的コンテンツ対応）
-    setTimeout(() => {
-      contentDebugLog('遅延翻訳実行');
+    // 既に翻訳が開始されていないことを確認
+    if (!this.translationStarted) {
+      this.translationStarted = true;
       this.translationService.startTranslation(domain);
-    }, 2000);
+
+      // 遅延再翻訳（動的コンテンツ対応）
+      // 最初の翻訳実行から時間を開けて2回目の翻訳を実行
+      setTimeout(() => {
+        contentDebugLog('遅延翻訳実行');
+        this.translationService.startTranslation(domain);
+      }, 2000);
+    }
   }
 }
 
