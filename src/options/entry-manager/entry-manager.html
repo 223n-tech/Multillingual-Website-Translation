@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GitHub翻訳拡張機能 - 翻訳エントリー管理</title>
     <script src="buildInfoRuntime.js"></script>
+    <script src="build-info-loader.js"></script>
+    <link rel="stylesheet" href="entry-manager-layout.css" />
   </head>
   <body>
     <div class="container">
@@ -12,23 +14,13 @@
         <h1 id="page-title">翻訳エントリー管理</h1>
         <div class="domain-info">
           <span>ドメイン: <strong id="current-domain"></strong></span>
-          <span class="version-badge">Ver.<span id="version-info"><%= version %></span></span>
+          <span class="version-badge">Ver.<span id="version-info"></span></span>
         </div>
       </header>
 
       <div class="controls-bar">
         <div class="entry-counter">
           エントリー数: <span id="entry-count">0</span> / 表示中: <span id="filtered-count">0</span>
-        </div>
-        <div class="search-filter">
-          <input type="text" id="search-input" placeholder="検索..." />
-          <select id="context-filter">
-            <option value="">すべてのコンテキスト</option>
-          </select>
-          <label>
-            <input type="checkbox" id="regex-filter" />
-            正規表現のみ
-          </label>
         </div>
         <div class="action-buttons">
           <button id="add-entry-btn" class="btn primary">新規追加</button>
@@ -37,99 +29,118 @@
       </div>
 
       <main class="content-area">
-        <!-- エントリーリスト -->
-        <div id="entry-list" class="entry-list"></div>
-
-        <!-- 初期メッセージ -->
-        <div id="initial-message" class="message-container">
-          <div class="message">
-            <h3>翻訳エントリー管理</h3>
-            <p>
-              左のリストからエントリーを選択するか、「新規追加」ボタンをクリックして翻訳エントリーを追加してください。
-            </p>
-          </div>
-        </div>
-
-        <!-- エントリー詳細表示 -->
-        <div id="entry-detail" class="detail-panel" style="display: none">
-          <h3>エントリー詳細</h3>
-          <div class="detail-content">
-            <div class="detail-row">
-              <label>元のテキスト:</label>
-              <div id="detail-original" class="detail-value"></div>
-            </div>
-            <div class="detail-row">
-              <label>翻訳後のテキスト:</label>
-              <div id="detail-translated" class="detail-value"></div>
-            </div>
-            <div class="detail-row">
-              <label>コンテキスト:</label>
-              <div id="detail-context" class="detail-value"></div>
-            </div>
-            <div class="detail-row">
-              <label>正規表現:</label>
-              <div id="detail-regex" class="detail-value"></div>
-            </div>
-          </div>
-          <div class="detail-actions">
-            <button id="detail-edit-btn" class="btn primary">編集</button>
-            <button id="detail-delete-btn" class="btn danger">削除</button>
-          </div>
-        </div>
-
-        <!-- エントリー編集フォーム -->
-        <div id="entry-edit-form" class="form-panel" style="display: none">
-          <h3 id="entry-form-title">エントリー編集</h3>
-          <form id="translation-entry-form">
-            <div class="form-group">
-              <label for="entry-original">元のテキスト:</label>
-              <input type="text" id="entry-original" required />
-            </div>
-            <div class="form-group">
-              <label for="entry-translated">翻訳後のテキスト:</label>
-              <input type="text" id="entry-translated" required />
-            </div>
-            <div class="form-group">
-              <label for="entry-context">コンテキスト:</label>
-              <input type="text" id="entry-context" />
-            </div>
-            <div class="form-group checkbox">
+        <!-- 左側パネル：エントリーリスト -->
+        <div class="left-panel">
+          <div class="search-filter-section">
+            <div class="search-filter">
+              <input type="text" id="search-input" placeholder="検索..." />
+              <select id="context-filter">
+                <option value="">すべてのコンテキスト</option>
+              </select>
               <label>
-                <input type="checkbox" id="entry-regex" />
-                正規表現として処理
+                <input type="checkbox" id="regex-filter" />
+                正規表現のみ
               </label>
             </div>
-            <div class="form-actions">
-              <button type="submit" class="btn primary">保存</button>
-              <button type="button" id="entry-cancel-btn" class="btn">キャンセル</button>
-            </div>
-          </form>
+          </div>
+
+          <!-- エントリーリスト -->
+          <div id="entry-list" class="entry-list"></div>
         </div>
 
-        <!-- 正規表現テストツール -->
-        <div id="regex-test-tool" class="regex-tool" style="display: none">
-          <h3>正規表現テスト</h3>
-          <div class="form-group">
-            <label for="regex-pattern">正規表現パターン:</label>
-            <input type="text" id="regex-pattern" placeholder="パターン" />
+        <!-- 右側パネル：詳細・編集・テスト -->
+        <div class="right-panel">
+          <!-- 初期メッセージ -->
+          <div id="initial-message" class="message-container">
+            <div class="message">
+              <h3>翻訳エントリー管理</h3>
+              <p>
+                左のリストからエントリーを選択するか、「新規追加」ボタンをクリックして翻訳エントリーを追加してください。
+              </p>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="regex-replacement">置換文字列:</label>
-            <input type="text" id="regex-replacement" placeholder="置換文字列" />
+
+          <!-- エントリー詳細表示 -->
+          <div id="entry-detail" class="detail-panel" style="display: none">
+            <h3>エントリー詳細</h3>
+            <div class="detail-content">
+              <div class="detail-row">
+                <label>元のテキスト:</label>
+                <div id="detail-original" class="detail-value"></div>
+              </div>
+              <div class="detail-row">
+                <label>翻訳後のテキスト:</label>
+                <div id="detail-translated" class="detail-value"></div>
+              </div>
+              <div class="detail-row">
+                <label>コンテキスト:</label>
+                <div id="detail-context" class="detail-value"></div>
+              </div>
+              <div class="detail-row">
+                <label>正規表現:</label>
+                <div id="detail-regex" class="detail-value"></div>
+              </div>
+            </div>
+            <div class="detail-actions">
+              <button id="detail-edit-btn" class="btn primary">編集</button>
+              <button id="detail-delete-btn" class="btn danger">削除</button>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="regex-test-input">テスト文字列:</label>
-            <textarea
-              id="regex-test-input"
-              placeholder="ここにテストする文字列を入力してください"
-            ></textarea>
+
+          <!-- エントリー編集フォーム -->
+          <div id="entry-edit-form" class="form-panel" style="display: none">
+            <h3 id="entry-form-title">エントリー編集</h3>
+            <form id="translation-entry-form">
+              <div class="form-group">
+                <label for="entry-original">元のテキスト:</label>
+                <input type="text" id="entry-original" required />
+              </div>
+              <div class="form-group">
+                <label for="entry-translated">翻訳後のテキスト:</label>
+                <input type="text" id="entry-translated" required />
+              </div>
+              <div class="form-group">
+                <label for="entry-context">コンテキスト:</label>
+                <input type="text" id="entry-context" />
+              </div>
+              <div class="form-group checkbox">
+                <label>
+                  <input type="checkbox" id="entry-regex" />
+                  正規表現として処理
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn primary">保存</button>
+                <button type="button" id="entry-cancel-btn" class="btn">キャンセル</button>
+              </div>
+            </form>
           </div>
-          <div class="test-actions">
-            <button id="run-regex-test" class="btn primary">テスト実行</button>
-            <button id="apply-regex-test" class="btn">フォームに適用</button>
-            <button id="regex-test-cancel" class="btn">キャンセル</button>
+
+          <!-- 正規表現テストツール -->
+          <div id="regex-test-tool" class="regex-tool" style="display: none">
+            <h3>正規表現テスト</h3>
+            <div class="form-group">
+              <label for="regex-pattern">正規表現パターン:</label>
+              <input type="text" id="regex-pattern" placeholder="パターン" />
+            </div>
+            <div class="form-group">
+              <label for="regex-replacement">置換文字列:</label>
+              <input type="text" id="regex-replacement" placeholder="置換文字列" />
+            </div>
+            <div class="form-group">
+              <label for="regex-test-input">テスト文字列:</label>
+              <textarea
+                id="regex-test-input"
+                placeholder="ここにテストする文字列を入力してください"
+              ></textarea>
+            </div>
+            <div class="test-actions">
+              <button id="run-regex-test" class="btn primary">テスト実行</button>
+              <button id="apply-regex-test" class="btn">フォームに適用</button>
+              <button id="regex-test-cancel" class="btn">キャンセル</button>
+            </div>
+            <div id="regex-test-result" class="test-result-container"></div>
           </div>
-          <div id="regex-test-result" class="test-result-container"></div>
         </div>
       </main>
 
@@ -138,7 +149,7 @@
           <button id="save-entries-btn" class="btn primary">すべての変更を保存</button>
           <button id="back-btn" class="btn">設定ページに戻る</button>
         </div>
-        <div class="build-info">ビルド日時: <%= buildDate %></div>
+        <div class="build-info"></div>
       </footer>
     </div>
 

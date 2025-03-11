@@ -63,10 +63,9 @@ const buildInfoRuntimeContent = buildInfoRuntimeTemplate
   .replace(/<%- versionWithBuild %>/g, versionWithBuild)
   .replace(/<%- buildDate %>/g, buildDate);
 
-// 出力ディレクトリにファイルを書き込み
-const buildInfoRuntimePath = path.resolve(__dirname, 'dist/buildInfoRuntime.js');
-fs.mkdirSync(path.dirname(buildInfoRuntimePath), { recursive: true });
-fs.writeFileSync(buildInfoRuntimePath, buildInfoRuntimeContent, 'utf8');
+// buildInfoLoader.jsファイルも読み込む
+const buildInfoLoaderPath = path.resolve(__dirname, 'src/utils/buildInfoLoader.js');
+const buildInfoLoaderContent = fs.readFileSync(buildInfoLoaderPath, 'utf8');
 
 export default {
   entry: {
@@ -75,6 +74,7 @@ export default {
     popup: './src/popup/index.ts',
     options: './src/options/index.ts',
     'entry-manager': './src/options/entry-manager/index.ts',
+    'build-info-loader': './src/utils/buildInfoLoader.js',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -129,13 +129,17 @@ export default {
               .replace(/<%- buildDate %>/g, buildDate);
           },
         },
+        // 追加のCSSファイルをコピー
+        {
+          from: 'src/options/entry-manager/entry-manager-layout.css',
+          to: 'entry-manager-layout.css',
+        },
       ],
     }),
     new HtmlWebpackPlugin({
       template: './src/popup/popup.html',
       filename: 'popup.html',
-      chunks: ['popup'],
-      // HTMLにバージョン情報を注入
+      chunks: ['popup', 'build-info-loader'],
       templateParameters: {
         version: versionWithBuild,
         buildDate: buildDate,
@@ -144,7 +148,7 @@ export default {
     new HtmlWebpackPlugin({
       template: './src/options/options.html',
       filename: 'options.html',
-      chunks: ['options'],
+      chunks: ['options', 'build-info-loader'],
       templateParameters: {
         version: versionWithBuild,
         buildDate: buildDate,
@@ -154,29 +158,12 @@ export default {
     new HtmlWebpackPlugin({
       template: './src/options/entry-manager/entry-manager.html',
       filename: 'entry-manager.html',
-      chunks: ['entry-manager'],
+      chunks: ['entry-manager', 'build-info-loader'],
       templateParameters: {
         version: versionWithBuild,
         buildDate: buildDate,
       },
     }),
-    // ビルド情報をHTML内に埋め込むためのプラグイン
-    {
-      apply: (compiler) => {
-        compiler.hooks.compilation.tap('BuildInfoPlugin', (compilation) => {
-          HtmlWebpackPlugin.getHooks(compilation).beforeEmit.tapAsync(
-            'BuildInfoPlugin',
-            (data, cb) => {
-              data.html = data.html.replace(
-                '</body>',
-                `<script>window.BUILD_INFO = { version: "${version}", buildNumber: ${buildNumber}, fullVersion: "${versionWithBuild}", buildDate: "${buildDate}" };</script></body>`,
-              );
-              cb(null, data);
-            },
-          );
-        });
-      },
-    },
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
     }),

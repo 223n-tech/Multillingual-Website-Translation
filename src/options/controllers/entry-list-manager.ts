@@ -147,12 +147,12 @@ export class EntryListManager {
     // 元のテキスト
     const original = document.createElement('div');
     original.className = 'entry-original';
-    original.textContent = this.truncateText(entry.original, 80);
+    original.textContent = this.truncateText(entry.original, 100);
 
     // 翻訳済みテキスト
     const translated = document.createElement('div');
     translated.className = 'entry-translated';
-    translated.textContent = this.truncateText(entry.translated, 80);
+    translated.textContent = this.truncateText(entry.translated, 100);
 
     // メタデータ行（コンテキストと正規表現フラグ）
     const meta = document.createElement('div');
@@ -181,27 +181,24 @@ export class EntryListManager {
 
     // クリックイベントの追加
     card.addEventListener('click', () => {
-      this.handleEntryClick(originalIndex);
+      this.handleEntryClick(originalIndex, card);
     });
 
     return card;
   }
 
   /**
-   * テキストの表示を適切な長さに切り詰める
-   */
-  private truncateText(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
-      return text;
-    }
-    return text.substring(0, maxLength) + '...';
-  }
-
-  /**
    * エントリーカードのクリック処理
    */
-  private handleEntryClick(index: number): void {
+  private handleEntryClick(index: number, clickedCard: HTMLElement): void {
     uiDebugLog('エントリーカードがクリックされました', { index });
+
+    // 以前の選択を解除
+    const allCards = this.controller.getEntryList().querySelectorAll('.entry-card');
+    allCards.forEach((card) => card.classList.remove('selected'));
+
+    // クリックされたカードを選択状態にする
+    clickedCard.classList.add('selected');
 
     const translationData = this.controller.getTranslationData();
     if (
@@ -234,5 +231,23 @@ export class EntryListManager {
 
     // 初期メッセージを非表示
     this.controller.hideInitialMessage();
+
+    // スマホ表示の場合は右パネルにスクロール
+    if (window.innerWidth <= 768) {
+      const rightPanel = document.querySelector('.right-panel');
+      if (rightPanel) {
+        rightPanel.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }
+
+  /**
+   * テキストの表示を適切な長さに切り詰める
+   */
+  private truncateText(text: string, maxLength: number): string {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return text.substring(0, maxLength) + '...';
   }
 }
